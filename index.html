@@ -1700,12 +1700,23 @@ function showGuide(dayIdx) {
     </div>`;
   }).join('');
 
+  // --- 材料まとめHTML ---
+  const ingHtml = dishes.map(dish=>`
+    <details class="guide-ing-dish" open>
+      <summary><span>${dish.emoji}</span><span>${dish.name}</span></summary>
+      <div class="guide-ing-dish-body">
+        ${dish.ing.map(i=>`<div class="guide-ing-row"><span>${i.n}</span><span class="guide-ing-amt">${i.a}</span></div>`).join('')}
+      </div>
+    </details>`).join('');
+
   document.getElementById('guide-content').innerHTML=`
     <div class="guide-day-info">
       <div class="guide-day-label">DAY ${dayIdx+1} — ${day.date}（合計 約${totalMin}分）</div>
       <div class="guide-day-dishes">${dishes.map(d=>d.emoji+' '+d.name).join('・')}</div>
     </div>
-    <div class="section-title">⏱ 調理タイムライン</div>
+    <div class="section-title">🥄 今日の材料（${S.persons}人前）</div>
+    ${ingHtml}
+    <div class="section-title" style="margin-top:16px">⏱ 調理タイムライン</div>
     <div class="timeline-container">${timelineHtml}</div>
     <div style="height:24px"></div>
   `;
