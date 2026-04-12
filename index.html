@@ -167,6 +167,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
         <button class="picker-btn" onclick="adj('dishes',1)">＋</button>
       </div>
     </div>
+    <div class="picker-row">
+      <span class="picker-label">人数</span>
+      <div class="picker-ctrl">
+        <button class="picker-btn" onclick="adj('persons',-1)">−</button>
+        <span class="picker-val" id="persons-val">2</span>
+        <button class="picker-btn" onclick="adj('persons',1)">＋</button>
+      </div>
+    </div>
   </div>
   <button class="btn-gen" onclick="generate()">✨ 献立を生成する</button>
   <div id="home-notice" class="card-sm" style="text-align:center;color:var(--sub);font-size:13px;display:none">
