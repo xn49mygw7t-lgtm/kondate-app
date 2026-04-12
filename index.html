@@ -104,6 +104,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .guide-day-info{margin:0 16px 16px;padding:14px 16px;background:linear-gradient(135deg,rgba(255,107,53,.12),rgba(255,142,83,.12));border-radius:14px}
 .guide-day-label{font-size:13px;font-weight:700;color:var(--primary)}
 .guide-day-dishes{font-size:12px;color:var(--sub);margin-top:3px}
+/* Guide ingredient summary */
+.guide-ing-dish{margin:0 16px 6px}
+.guide-ing-dish summary{font-size:13px;font-weight:700;color:var(--accent);padding:10px 14px;background:var(--card);border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:6px;list-style:none;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.guide-ing-dish summary::-webkit-details-marker{display:none}
+.guide-ing-dish[open] summary{border-radius:12px 12px 0 0;border-bottom:1px solid var(--border)}
+.guide-ing-dish-body{background:var(--card);border-radius:0 0 12px 12px;box-shadow:0 1px 4px rgba(0,0,0,.05);overflow:hidden}
+.guide-ing-row{display:flex;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--border);font-size:13px}
+.guide-ing-row:first-child{border-top:none}
+.guide-ing-amt{color:var(--primary);font-weight:600}
 
 /* Timeline */
 .timeline-container{padding:0 16px}
