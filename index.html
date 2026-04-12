@@ -266,6 +266,52 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
   </div>
 </div>
 
+<!-- RECIPE EDITOR -->
+<div class="screen" id="s-editor">
+  <div class="hdr" style="display:flex;align-items:center;justify-content:space-between">
+    <button class="back-btn" style="padding:0" onclick="goBack()">← 戻る</button>
+    <h1 id="editor-title" style="font-size:18px">レシピを編集</h1>
+    <div style="width:60px"></div>
+  </div>
+  <div class="editor-section">
+    <label class="editor-label">料理名</label>
+    <input class="editor-input" id="ed-name" type="text" placeholder="例: 生姜焼き">
+  </div>
+  <div class="editor-section">
+    <label class="editor-label">絵文字</label>
+    <div class="editor-emoji-row" id="ed-emoji-row">
+      <button class="editor-emoji-btn selected" id="ed-emoji-selected" onclick="openEmojiPicker()">🍳</button>
+      <span style="font-size:12px;color:var(--sub);align-self:center">← タップして変更</span>
+    </div>
+    <input class="editor-input" id="ed-emoji-input" type="text" maxlength="2" placeholder="絵文字を直接入力" oninput="setEditorEmoji(this.value)" style="margin-top:6px">
+  </div>
+  <div class="editor-section">
+    <label class="editor-label">種別</label>
+    <div class="editor-role-row">
+      <button class="editor-role-btn selected" id="ed-role-main" onclick="setEditorRole('main')">主菜</button>
+      <button class="editor-role-btn" id="ed-role-side" onclick="setEditorRole('side')">副菜</button>
+    </div>
+  </div>
+  <div class="editor-section">
+    <label class="editor-label">調理時間（分）</label>
+    <input class="editor-input" id="ed-time" type="number" min="1" max="120" placeholder="20">
+  </div>
+  <div class="editor-section">
+    <label class="editor-label">材料</label>
+    <div id="ed-ing-list"></div>
+    <button class="add-row-btn" onclick="addIngRow()">＋ 材料を追加</button>
+  </div>
+  <div class="editor-section" style="margin-top:16px">
+    <label class="editor-label">手順</label>
+    <div id="ed-step-list"></div>
+    <button class="add-row-btn" onclick="addStepRow()">＋ 手順を追加</button>
+  </div>
+  <div style="height:16px"></div>
+  <button class="btn-save" onclick="saveRecipe()">💾 保存する</button>
+  <button class="btn-delete-recipe" id="ed-delete-btn" onclick="deleteRecipe()" style="display:none">🗑 このレシピを削除</button>
+  <div style="height:24px"></div>
+</div>
+
 <!-- NAV -->
 <nav class="nav">
   <button class="nav-btn active" id="nav-home" onclick="goScreen('home')">
