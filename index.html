@@ -1407,19 +1407,32 @@ function dateStr(offset) {
   return `${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]})`;
 }
 
+// 汁物ID一覧（1日1品まで）
+const SOUP_IDS = new Set([27, 28, 29, 30]);
+
 // ===================== GENERATE =====================
 function generate() {
   S.plan=[];
   const mPool=shuffle(MAINS);
   const sPool=shuffle(SIDES);
-  let mi=0, si=0;
+  const nonSoupPool=sPool.filter(r=>!SOUP_IDS.has(r.id));
+  const soupPool=sPool.filter(r=>SOUP_IDS.has(r.id));
+  let mi=0, si=0, nsi=0, soui=0;
   for(let i=0;i<S.days;i++){
     const main=mPool[mi%mPool.length]; mi++;
     const sides=[];
-    for(let j=0;j<S.dishes-1;j++){
-      sides.push(sPool[si%sPool.length]); si++;
+    const sideCount=S.dishes-1;
+    // 汁物を1品含める（副菜が1品以上あり汁物プールが存在する場合）
+    if(sideCount>=1 && soupPool.length){
+      sides.push(soupPool[soui%soupPool.length]); soui++;
     }
-    S.plan.push({date:dateStr(i), main, sides});
+    // 残りスロットは汁物以外から選ぶ
+    const fillPool = nonSoupPool.length ? nonSoupPool : sPool;
+    while(sides.length<sideCount){
+      sides.push(fillPool[nsi%fillPool.length]); nsi++;
+    }
+    // 並び順をシャッフルして汁物が毎回先頭にならないようにする
+    S.plan.push({date:dateStr(i), main, sides:shuffle(sides)});
   }
   S.checked.clear();
   renderPlan();
