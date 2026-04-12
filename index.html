@@ -1848,6 +1848,12 @@ function rebuildDB() {
 }
 
 // ===================== NAVIGATION =====================
+// ホームのレシピ一覧ボタン
+function openRecipeList() {
+  S.prevScreen = S.curScreen;
+  openEditor(null);
+}
+
 function goScreen(name) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
