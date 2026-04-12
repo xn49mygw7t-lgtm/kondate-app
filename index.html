@@ -1292,7 +1292,7 @@ const STEP_MINS = {
 };
 
 // ===================== STATE =====================
-const S = {days:5, dishes:3, plan:[], checked:new Set(), curRecipe:null, curScreen:'home', prevScreen:'home', addTarget:null, addFilter:'all', addSearch:'', guideDay:null};
+const S = {days:5, dishes:3, persons:2, plan:[], checked:new Set(), curRecipe:null, curScreen:'home', prevScreen:'home', addTarget:null, addFilter:'all', addSearch:'', guideDay:null, editRecipe:null};
 const MAINS = DB.filter(r=>r.role==='main');
 const SIDES = DB.filter(r=>r.role==='side');
 
