@@ -1511,6 +1511,9 @@ function showRecipe(id) {
         ${s.tip?`<div class="step-tip">💡 ${s.tip}</div>`:''}
       </div>`).join('')}
     </div>
+    <div style="margin:0 16px 4px;display:flex;justify-content:flex-end">
+      <button class="edit-recipe-btn" onclick="openEditor(${r.id})">✏️ 編集</button>
+    </div>
     <div class="source-note">レシピ：${r.source}</div>
   `;
   goScreen('recipe');
