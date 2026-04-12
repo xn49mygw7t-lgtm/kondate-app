@@ -1300,8 +1300,10 @@ const SIDES = DB.filter(r=>r.role==='side');
 function adj(key, d) {
   if(key==='days') S.days = Math.min(14, Math.max(1, S.days+d));
   if(key==='dishes') S.dishes = Math.min(3, Math.max(1, S.dishes+d));
+  if(key==='persons') S.persons = Math.min(8, Math.max(1, S.persons+d));
   document.getElementById('days-val').textContent = S.days;
   document.getElementById('dishes-val').textContent = S.dishes;
+  document.getElementById('persons-val').textContent = S.persons;
 }
 
 function shuffle(arr) {
