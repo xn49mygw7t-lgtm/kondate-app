@@ -1533,17 +1533,45 @@ function goBack() {
   goScreen(S.prevScreen);
 }
 
+// ===================== AMOUNT COMBINER =====================
+function combineAmounts(a1, a2) {
+  if(!a1) return a2; if(!a2) return a1;
+  // Non-numeric special values: just return same or concat
+  const specials=['少々','適量','少量','ひとつまみ','適宜','お好みで','少し'];
+  if(specials.includes(a1)&&specials.includes(a2)) return a1;
+  if(specials.includes(a1)||specials.includes(a2)) return a1+'＋'+a2;
+  // 大さじN
+  const T1=a1.match(/^大さじ([\d.]+)$/), T2=a2.match(/^大さじ([\d.]+)$/);
+  if(T1&&T2){const s=parseFloat(T1[1])+parseFloat(T2[1]);return '大さじ'+(Number.isInteger(s)?s:s.toFixed(1));}
+  // 小さじN
+  const t1=a1.match(/^小さじ([\d.]+)$/), t2=a2.match(/^小さじ([\d.]+)$/);
+  if(t1&&t2){const s=parseFloat(t1[1])+parseFloat(t2[1]);return '小さじ'+(Number.isInteger(s)?s:s.toFixed(1));}
+  // Ng / Nml / Ncc / Nkg / NL
+  const u1=a1.match(/^([\d.]+)\s*(g|ml|cc|kg|L)$/i), u2=a2.match(/^([\d.]+)\s*(g|ml|cc|kg|L)$/i);
+  if(u1&&u2&&u1[2].toLowerCase()===u2[2].toLowerCase()){
+    const s=parseFloat(u1[1])+parseFloat(u2[1]);
+    return (Number.isInteger(s)?s:parseFloat(s.toFixed(1)))+u1[2];
+  }
+  // N個/本/枚/切れ/袋/缶/パック/束/房/片/粒/尾/匹/人前
+  const c1=a1.match(/^([\d.]+)\s*(個|本|枚|切れ|袋|缶|パック|束|房|片|粒|尾|匹|人前|枚|玉|株|缶)$/);
+  const c2=a2.match(/^([\d.]+)\s*(個|本|枚|切れ|袋|缶|パック|束|房|片|粒|尾|匹|人前|枚|玉|株|缶)$/);
+  if(c1&&c2&&c1[2]===c2[2]){const s=parseFloat(c1[1])+parseFloat(c2[1]);return (Number.isInteger(s)?s:s.toFixed(1))+c1[2];}
+  // Fallback: concatenate
+  return a1+'＋'+a2;
+}
+
 // ===================== RENDER SHOPPING =====================
 function renderShop() {
   const el=document.getElementById('shop-list');
   if(!S.plan.length){el.innerHTML='<div class="empty-state"><div class="e-icon">🛒</div><p>まだ献立がありません<br>ホームから生成してください</p></div>';return;}
-  // Collect all ingredients
-  const allRecipes=[...S.plan.map(d=>d.main),...S.plan.flatMap(d=>d.sides)];
+  // Collect all ingredients and aggregate same-name items
+  const allRecipes=[...S.plan.map(d=>d.main).filter(Boolean),...S.plan.flatMap(d=>d.sides)];
   const map={};
   allRecipes.forEach(r=>{
     r.ing.forEach(i=>{
       const key=i.n;
       if(!map[key]) map[key]={n:i.n,a:i.a,c:i.c,id:key};
+      else map[key].a=combineAmounts(map[key].a,i.a);
     });
   });
   // Group by category
