@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>献立アプリ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#F5F5F7;--card:#fff;--primary:#FF6B35;--secondary:#FF8E53;--accent:#2C3E50;--text:#1a1a2e;--sub:#6c757d;--border:#e8e8e8;--safe:env(safe-area-inset-bottom,0px)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:calc(70px + var(--safe));overflow-x:hidden}
+.screen{display:none;min-height:100vh}
+.screen.active{display:block}
+
+/* Top header */
+.hdr{position:sticky;top:0;z-index:100;background:var(--bg);padding:16px 16px 8px;backdrop-filter:blur(10px)}
+.hdr h1{font-size:22px;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr .sub{font-size:12px;color:var(--sub);margin-top:2px}
+
+/* Bottom nav */
+.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;z-index:200;padding-bottom:var(--safe)}
+.nav-btn{flex:1;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;color:var(--sub);font-size:10px;cursor:pointer;transition:color .2s}
+.nav-btn.active{color:var(--primary)}
+.nav-btn .icon{font-size:22px}
+
+/* Cards */
+.card{background:var(--card);border-radius:16px;padding:16px;margin:0 16px 12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card-sm{background:var(--card);border-radius:12px;padding:12px 14px;margin:0 16px 8px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+
+/* Home screen */
+.home-hero{margin:0 16px 16px;padding:20px;border-radius:20px;background:linear-gradient(135deg,#FF6B35,#FF8E53);color:#fff}
+.home-hero h2{font-size:18px;font-weight:700}
+.home-hero p{font-size:13px;opacity:.85;margin-top:4px}
+.picker-row{display:flex;align-items:center;gap:12px;margin-top:12px}
+.picker-label{font-size:13px;opacity:.9;white-space:nowrap}
+.picker-ctrl{display:flex;align-items:center;gap:8px;margin-left:auto}
+.picker-val{font-size:22px;font-weight:700;min-width:36px;text-align:center}
+.picker-btn{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(255,255,255,.2);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300}
+.btn-gen{width:calc(100% - 32px);margin:0 16px 16px;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,#FF6B35,#FF8E53);color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(255,107,53,.4);letter-spacing:.5px}
+.btn-gen:active{transform:scale(.98);opacity:.9}
+
+/* Plan screen */
+.day-card{background:var(--card);border-radius:16px;margin:0 16px 12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.day-hdr{padding:12px 16px 10px;background:linear-gradient(135deg,rgba(255,107,53,.1),rgba(255,142,83,.1));border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.day-hdr .day-label{font-size:14px;font-weight:700;color:var(--primary)}
+.day-hdr .day-date{font-size:12px;color:var(--sub)}
+.dish-row{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;gap:10px;transition:background .15s}
+.dish-row:last-child{border-bottom:none}
+.dish-row:active{background:#f9f9f9}
+.dish-emoji{font-size:24px;flex-shrink:0}
+.dish-info{flex:1;min-width:0}
+.dish-role{font-size:10px;color:var(--sub);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.dish-name{font-size:14px;font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dish-meta{font-size:11px;color:var(--sub);margin-top:2px}
+.regen-btn{flex-shrink:0;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:#f5f5f5;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.regen-btn:active{background:#efefef}
+
+/* Recipe screen */
+.recipe-hero{margin:0 16px 16px;border-radius:20px;padding:24px 20px;color:#fff;position:relative;overflow:hidden}
+.recipe-hero::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,.15)}
+.recipe-hero-content{position:relative;z-index:1}
+.recipe-emoji{font-size:52px;margin-bottom:8px;display:block}
+.recipe-name{font-size:22px;font-weight:700;line-height:1.2}
+.recipe-desc{font-size:13px;opacity:.9;margin-top:8px;line-height:1.5}
+.recipe-tags{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.tag{background:rgba(255,255,255,.25);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.section-title{font-size:15px;font-weight:700;color:var(--accent);margin:16px 16px 8px;display:flex;align-items:center;gap:6px}
+.ing-item{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border)}
+.ing-item:last-child{border-bottom:none}
+.ing-name{font-size:14px}
+.ing-amt{font-size:13px;color:var(--primary);font-weight:600}
+.step-item{padding:14px;border-bottom:1px solid var(--border)}
+.step-item:last-child{border-bottom:none}
+.step-num{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px}
+.step-title{font-size:14px;font-weight:700;margin-bottom:6px}
+.step-desc{font-size:13px;color:var(--sub);line-height:1.6}
+.step-tip{margin-top:8px;background:rgba(255,107,53,.08);border-left:3px solid var(--primary);padding:6px 10px;border-radius:0 8px 8px 0;font-size:12px;color:var(--primary)}
+.back-btn{display:flex;align-items:center;gap:6px;padding:12px 16px;font-size:15px;color:var(--primary);background:none;border:none;cursor:pointer;font-weight:600}
+.source-note{font-size:11px;color:var(--sub);text-align:center;padding:8px 16px 16px}
+
+/* Shopping screen */
+.cat-section{margin:0 16px 12px}
+.cat-title{font-size:13px;font-weight:700;color:var(--sub);margin-bottom:6px;padding-left:4px;text-transform:uppercase;letter-spacing:.5px}
+.shop-item{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--card);border-radius:12px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,.05);cursor:pointer;transition:opacity .2s}
+.shop-item.checked{opacity:.4}
+.shop-item.checked .shop-name{text-decoration:line-through}
+.shop-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.shop-item.checked .shop-check{background:var(--primary);border-color:var(--primary);color:#fff}
+.shop-name{font-size:14px;flex:1}
+.shop-amt{font-size:13px;color:var(--primary);font-weight:600}
+.empty-state{text-align:center;padding:60px 20px;color:var(--sub)}
+.empty-state .e-icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px;line-height:1.6}
+
+/* Dish row actions */
+.dish-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.del-btn{width:30px;height:30px;border-radius:50%;border:1.5px solid #ffcdd2;background:#fff5f5;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.del-btn:active{background:#ffebee}
+.add-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 14px;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:none;color:var(--sub);font-size:13px;cursor:pointer;width:calc(100% - 28px)}
+.add-btn:active{background:#f5f5f5}
+.guide-btn{padding:6px 12px;border:1.5px solid var(--primary);border-radius:20px;background:none;color:var(--primary);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+.guide-btn:active{background:rgba(255,107,53,.1)}
+
+/* Guide screen */
+.guide-day-info{margin:0 16px 16px;padding:14px 16px;background:linear-gradient(135deg,rgba(255,107,53,.12),rgba(255,142,83,.12));border-radius:14px}
+.guide-day-label{font-size:13px;font-weight:700;color:var(--primary)}
+.guide-day-dishes{font-size:12px;color:var(--sub);margin-top:3px}
+
+/* Timeline */
+.timeline-container{padding:0 16px}
+.timeline-step{display:flex;gap:10px;align-items:flex-start}
+.timeline-left{display:flex;flex-direction:column;align-items:center;width:52px;flex-shrink:0}
+.timeline-time{font-size:10px;font-weight:700;color:var(--primary);white-space:nowrap;padding-top:14px;text-align:center}
+.timeline-line{flex:1;width:2px;background:var(--border);margin-top:4px;min-height:20px}
+.timeline-card{flex:1;background:var(--card);border-radius:14px;padding:11px 13px;margin-bottom:8px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.timeline-dish-tag{display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.timeline-dish-emoji{font-size:16px}
+.timeline-dish-name{font-size:11px;color:var(--sub);font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timeline-duration{font-size:10px;background:rgba(255,107,53,.1);color:var(--primary);padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap}
+.timeline-step-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.timeline-step-desc{font-size:12px;color:var(--sub);line-height:1.55}
+.timeline-tip{margin-top:6px;background:rgba(255,107,53,.08);border-left:3px solid var(--primary);padding:5px 9px;border-radius:0 7px 7px 0;font-size:11px;color:var(--primary)}
+
+/* Add modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:82vh;display:flex;flex-direction:column}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
+.modal-title{font-size:16px;font-weight:700;padding:12px 16px 10px;border-bottom:1px solid var(--border)}
+.modal-tabs{display:flex;padding:10px 16px 6px;gap:8px}
+.modal-tab{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:none;font-size:12px;font-weight:600;color:var(--sub);cursor:pointer}
+.modal-tab.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.modal-search{margin:6px 16px 10px;display:flex;align-items:center;gap:8px;background:#f5f5f7;border-radius:10px;padding:8px 12px}
+.modal-search input{border:none;background:none;flex:1;font-size:14px;outline:none}
+.modal-list{overflow-y:auto;flex:1;padding-bottom:calc(16px + var(--safe))}
+.modal-recipe-row{display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;gap:12px}
+.modal-recipe-row:active{background:#f9f9f9}
+.modal-recipe-emoji{font-size:22px;flex-shrink:0}
+.modal-recipe-info{flex:1;min-width:0}
+.modal-recipe-role{font-size:10px;color:var(--sub);font-weight:600;letter-spacing:.4px}
+.modal-recipe-name{font-size:14px;font-weight:600;margin-top:1px}
+.modal-recipe-meta{font-size:11px;color:var(--sub);margin-top:2px}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="s-home">
+  <div class="hdr">
+    <h1>献立アプリ</h1>
+  </div>
+  <div class="home-hero">
+    <h2>夕食の献立を自動生成</h2>
+    <p>人気レシピから毎日の夕食を提案します</p>
+    <div class="picker-row">
+      <span class="picker-label">日数</span>
+      <div class="picker-ctrl">
+        <button class="picker-btn" onclick="adj('days',-1)">−</button>
+        <span class="picker-val" id="days-val">5</span>
+        <button class="picker-btn" onclick="adj('days',1)">＋</button>
+      </div>
+    </div>
+    <div class="picker-row">
+      <span class="picker-label">品数</span>
+      <div class="picker-ctrl">
+        <button class="picker-btn" onclick="adj('dishes',-1)">−</button>
+        <span class="picker-val" id="dishes-val">3</span>
+        <button class="picker-btn" onclick="adj('dishes',1)">＋</button>
+      </div>
+    </div>
+  </div>
+  <button class="btn-gen" onclick="generate()">✨ 献立を生成する</button>
+  <div id="home-notice" class="card-sm" style="text-align:center;color:var(--sub);font-size:13px;display:none">
+    献立を生成しました！「献立」タブで確認してください
+  </div>
+</div>
+
+<!-- PLAN -->
+<div class="screen" id="s-plan">
+  <div class="hdr">
+    <h1>献立</h1>
+    <div class="sub" id="plan-sub"></div>
+  </div>
+  <div id="plan-list">
+    <div class="empty-state">
+      <div class="e-icon">📅</div>
+      <p>まだ献立がありません<br>ホームから生成してください</p>
+    </div>
+  </div>
+</div>
+
+<!-- RECIPE -->
+<div class="screen" id="s-recipe">
+  <button class="back-btn" onclick="goBack()">← 戻る</button>
+  <div id="recipe-content"></div>
+</div>
+
+<!-- SHOPPING -->
+<div class="screen" id="s-shop">
+  <div class="hdr">
+    <h1>買い物リスト</h1>
+    <div class="sub" id="shop-sub"></div>
+  </div>
+  <div id="shop-list">
+    <div class="empty-state">
+      <div class="e-icon">🛒</div>
+      <p>まだ献立がありません<br>ホームから生成してください</p>
+    </div>
+  </div>
+</div>
+
+<!-- GUIDE -->
+<div class="screen" id="s-guide">
+  <button class="back-btn" onclick="goBack()">← 戻る</button>
+  <div id="guide-content"></div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="add-modal" onclick="closeAddModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">おかずを選ぶ</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-all" onclick="setAddFilter('all')">すべて</button>
+      <button class="modal-tab" id="tab-main" onclick="setAddFilter('main')">主菜</button>
+      <button class="modal-tab" id="tab-side" onclick="setAddFilter('side')">副菜</button>
+    </div>
+    <div class="modal-search">
+      <span>🔍</span>
+      <input type="text" id="add-search-input" placeholder="レシピを検索..." oninput="setAddSearch(this.value)">
+    </div>
+    <div class="modal-list" id="add-modal-list"></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" id="nav-home" onclick="goScreen('home')">
+    <span class="icon">🏠</span>ホーム
+  </button>
+  <button class="nav-btn" id="nav-plan" onclick="goScreen('plan')">
+    <span class="icon">📅</span>献立
+  </button>
+  <button class="nav-btn" id="nav-shop" onclick="goScreen('shop')">
+    <span class="icon">🛒</span>買い物
+  </button>
+</nav>
+
+<script>
+// ===================== RECIPE DB =====================
+const DB = [
+// ===== MAINS =====
+{id:1,name:'生姜焼き',emoji:'🥩',role:'main',grad:'linear-gradient(135deg,#FF6B35,#FF8E53)',time:20,serve:2,source:'リュウジのバズレシピ',
+desc:'千切りとすりおろしのダブル生姜で作る、ご飯が止まらない定番おかず。',
+ing:[
+  {n:'豚ロース肉（生姜焼き用）',a:'200g',c:'肉類'},
+  {n:'生姜',a:'15g',c:'野菜'},
+  {n:'キャベツ',a:'適量',c:'野菜'},
+  {n:'薄力粉',a:'適量',c:'粉類'},
+  {n:'醤油',a:'大さじ1と1/2',c:'調味料'},
+  {n:'みりん',a:'小さじ2',c:'調味料'},
+  {n:'酒',a:'大さじ2',c:'調味料'},
+  {n:'砂糖',a:'小さじ1',c:'調味料'},
+  {n:'味の素',a:'4振り',c:'調味料'},
+  {n:'サラダ油',a:'大さじ1',c:'調味料'},
+],
+steps:[
+  {t:'タレを合わせる',d:'醤油・みりん・酒・砂糖・味の素を混ぜ、生姜半量をすりおろして加えておく。',tip:'先に合わせることで均一な味に'},
+  {t:'肉の下処理',d:'豚ロース肉の筋を数か所切り、薄力粉を全体に薄くまぶす。残りの生姜は千切りにする。',tip:'筋切りで肉が縮まない'},
+  {t:'肉を焼く',d:'フライパンに油を中火で熱し、豚肉と生姜の千切りを入れて焼く。片面に焼き色がついたら返す。',tip:'動かさず置くと美しい焼き色に'},
+  {t:'タレを絡める',d:'肉に火が通ったらタレを加え、強火にして全体に絡めながらとろっとするまで煮詰める。',tip:'強火で手早く絡めるのがコツ'},
+  {t:'盛り付け',d:'千切りキャベツを盛ったお皿に乗せて完成。',tip:'キャベツは冷水にさらすとシャキシャキに'},
+]},
+
+{id:2,name:'唐揚げ',emoji:'🍗',role:'main',grad:'linear-gradient(135deg,#F4A261,#E76F51)',time:35,serve:2,source:'リュウジのバズレシピ',
+desc:'ナツメグを隠し味に使うことで、居酒屋を超える旨さに仕上がる唐揚げ。',
+ing:[
+  {n:'鶏モモ肉',a:'320g',c:'肉類'},
+  {n:'醤油',a:'大さじ3強',c:'調味料'},
+  {n:'みりん',a:'大さじ1',c:'調味料'},
+  {n:'酒',a:'大さじ1',c:'調味料'},
+  {n:'味の素',a:'8振り',c:'調味料'},
+  {n:'にんにく',a:'1片',c:'野菜'},
+  {n:'ナツメグ',a:'5振り',c:'調味料'},
+  {n:'片栗粉',a:'適量',c:'粉類'},
+  {n:'サラダ油（揚げ油）',a:'適量',c:'調味料'},
+],
+steps:[
+  {t:'鶏肉を切る',d:'鶏モモ肉を一口大に切り分ける。',tip:'大きめに切ると食べごたえがある'},
+  {t:'漬け込む',d:'醤油大さじ3強、みりん大さじ1、酒大さじ1、おろしにんにく1片、味の素8振り、ナツメグ5振りを混ぜてひと口大の鶏肉を漬け込み、常温で20〜30分置く。',tip:'ナツメグが旨味を引き立てる秘訣'},
+  {t:'衣をつける',d:'漬け込んだ肉に片栗粉をしっかりまぶす。',tip:'余分な粉は軽くはたく'},
+  {t:'揚げる',d:'鶏肉が半分浸かる量の油を中温（170℃前後）に熱し、揚げる。きつね色になったら一度取り出す。',tip:'低めの温度で中まで火を通す'},
+  {t:'二度揚げして完成',d:'油の温度を高め（180℃）にし、30秒ほど二度揚げしてカリッとさせれば完成。',tip:'二度揚げで衣がサクサクに'},
+]},
+
+{id:3,name:'ハンバーグ',emoji:'🍖',role:'main',grad:'linear-gradient(135deg,#A0522D,#CD853F)',time:30,serve:2,source:'リュウジのバズレシピ',
+desc:'粉ゼラチンと牛脂を使った裏技で、お店を超えるジューシーさを実現したハンバーグ。',
+ing:[
+  {n:'牛豚合挽き肉',a:'300g',c:'肉類'},
+  {n:'玉ねぎ',a:'1/2個',c:'野菜'},
+  {n:'卵',a:'1個',c:'卵・乳製品'},
+  {n:'バター',a:'10g',c:'卵・乳製品'},
+  {n:'コンソメ',a:'小さじ2/3',c:'調味料'},
+  {n:'パン粉',a:'大さじ4',c:'粉類'},
+  {n:'粉ゼラチン',a:'小さじ2',c:'その他'},
+  {n:'牛脂',a:'2個',c:'肉類'},
+  {n:'醤油・酒・みりん（ソース用）',a:'各大さじ2',c:'調味料'},
+  {n:'にんにく（ソース用）',a:'1片',c:'野菜'},
+  {n:'味の素（ソース用）',a:'2振り',c:'調味料'},
+],
+steps:[
+  {t:'玉ねぎを炒める',d:'バターで玉ねぎをしんなりするまで炒め、粗熱を取る。',tip:'炒め玉ねぎで甘みが増す'},
+  {t:'タネを作る',d:'合挽き肉に炒め玉ねぎ、卵、コンソメ、パン粉、粉ゼラチンを加えてしっかり練り混ぜる。',tip:'粉ゼラチンが肉汁を閉じ込める秘訣'},
+  {t:'成型して焼く',d:'タネを小判形に成型し、真ん中をへこませる。牛脂をひいたフライパンで両面を焼く。',tip:'牛脂で焼くとコクが段違い'},
+  {t:'蒸し焼きにする',d:'水50ccを加えて蓋をし、弱火で5〜6分蒸し焼きにして中まで火を通す。',tip:'蒸し焼きで失敗なく均一に火が通る'},
+  {t:'ソースを作る',d:'肉を取り出し、そのフライパンで醤油・酒・みりん各大さじ2、おろしにんにく、味の素2振りを煮詰めてソースを作り、かけて完成。',tip:'肉の旨みがしみたフライパンでソースを'},
+]},
+
+{id:4,name:'親子丼',emoji:'🥚',role:'main',grad:'linear-gradient(135deg,#F9C74F,#F8961E)',time:20,serve:1,source:'リュウジのバズレシピ',
+desc:'鰹節を粉にして加えた、100個の卵を使い試作した究極の親子丼。',
+ing:[
+  {n:'鶏モモ肉',a:'120g',c:'肉類'},
+  {n:'玉ねぎ',a:'1/4個',c:'野菜'},
+  {n:'卵',a:'2個',c:'卵・乳製品'},
+  {n:'鰹節',a:'3g',c:'乾物'},
+  {n:'醤油',a:'大さじ1と小さじ1',c:'調味料'},
+  {n:'みりん',a:'大さじ2と小さじ1',c:'調味料'},
+  {n:'水',a:'大さじ2',c:'調味料'},
+  {n:'味の素',a:'3振り',c:'調味料'},
+  {n:'三つ葉',a:'適量',c:'野菜'},
+  {n:'ご飯',a:'200g',c:'主食'},
+],
+steps:[
+  {t:'鰹節を粉にする',d:'鰹節3gを電子レンジで600W30秒加熱し、手で揉んで粉にする。',tip:'粉状にすることでだしが全体に広がる'},
+  {t:'鶏肉を焼く',d:'小鍋で鶏モモ肉を皮面から入れカリッと焼く。',tip:'皮をカリッと焼くことで旨みが出る'},
+  {t:'煮る',d:'鍋に薄切り玉ねぎ、醤油、みりん、水、鰹粉、味の素を加えて弱火で玉ねぎが柔らかくなるまで煮る。',tip:'弱火でじっくり煮て玉ねぎを甘くする'},
+  {t:'1回目の卵',d:'軽く溶いた卵1個を加え、蓋をして弱火で50秒加熱する。',tip:'あまり混ぜずとろみをつける'},
+  {t:'2回目の卵で完成',d:'もう1個の卵と三つ葉を加え、蓋をして半熟になったらご飯に乗せて完成。',tip:'2回に分けることでとろっとした仕上がりに'},
+]},
+
+{id:5,name:'無水肉じゃが',emoji:'🥔',role:'main',grad:'linear-gradient(135deg,#8B7355,#A0896A)',time:40,serve:3,source:'リュウジのバズレシピ',
+desc:'水を一滴も使わず野菜の水分だけで煮る、素材の旨みが凝縮された肉じゃが。',
+ing:[
+  {n:'豚バラ肉',a:'250g',c:'肉類'},
+  {n:'ジャガイモ',a:'400g',c:'野菜'},
+  {n:'人参',a:'300g',c:'野菜'},
+  {n:'玉ねぎ',a:'250g',c:'野菜'},
+  {n:'白滝',a:'200g',c:'野菜'},
+  {n:'生姜',a:'15g',c:'野菜'},
+  {n:'醤油',a:'大さじ4',c:'調味料'},
+  {n:'酒',a:'大さじ6',c:'調味料'},
+  {n:'白だし',a:'大さじ2',c:'調味料'},
+  {n:'砂糖',a:'大さじ2',c:'調味料'},
+  {n:'ごま油',a:'大さじ1と1/2',c:'調味料'},
+],
+steps:[
+  {t:'野菜を切る',d:'ジャガイモ・人参・玉ねぎを食べやすい大きさに切る。白滝は食べやすい長さに切って下茹でしておく。',tip:'ジャガイモは水にさらしてアクを抜く'},
+  {t:'豚バラを炒める',d:'ごま油を熱したフライパンで豚バラに塩胡椒をして炒め、脂を出す。',tip:'脂をしっかり出すことでコクが増す'},
+  {t:'野菜を加える',d:'豚バラを炒めたフライパンに全ての野菜と白滝、千切り生姜を加えて全体を炒め合わせる。',tip:'野菜に油を絡めることで旨みが出やすくなる'},
+  {t:'調味料を加える',d:'醤油・酒・白だし・砂糖を加えて混ぜ、蓋をして強めの弱火で20〜25分蒸し煮にする。',tip:'水なしなので蓋をしっかり閉める'},
+  {t:'仕上げ',d:'ジャガイモに竹串が通れば完成。お好みで和からしやラー油を添えても美味しい。',tip:'食べる直前に再度温めると味が染みて美味しくなる'},
+]},
+
+{id:6,name:'麻婆豆腐',emoji:'🌶️',role:'main',grad:'linear-gradient(135deg,#E63946,#FF6B6B)',time:20,serve:2,source:'リュウジのバズレシピ',
+desc:'豆板醤と甜麵醬のバランスが絶妙な、本格派の麻婆豆腐。',
+ing:[
+  {n:'豚挽き肉',a:'100g',c:'肉類'},
+  {n:'絹豆腐',a:'300g',c:'豆腐・大豆'},
+  {n:'にんにく',a:'2片',c:'野菜'},
+  {n:'長ネギ',a:'1/2本',c:'野菜'},
+  {n:'豆板醤',a:'大さじ1',c:'調味料'},
+  {n:'甜麵醬',a:'大さじ1',c:'調味料'},
+  {n:'ラー油',a:'小さじ2',c:'調味料'},
+  {n:'創味シャンタン',a:'小さじ1弱',c:'調味料'},
+  {n:'酒',a:'大さじ1',c:'調味料'},
+  {n:'醤油',a:'小さじ2/3',c:'調味料'},
+  {n:'水',a:'200cc',c:'調味料'},
+  {n:'片栗粉',a:'大さじ1',c:'粉類'},
+  {n:'山椒',a:'適量',c:'調味料'},
+],
+steps:[
+  {t:'豆腐を切る',d:'絹豆腐を2〜3cm角に切り、さっと下茹でして水気を切っておく。',tip:'下茹でで豆腐が崩れにくくなる'},
+  {t:'炒める',d:'油を熱したフライパンでにんにく（みじん切り）を炒め、豚挽き肉を加えて色が変わるまで炒める。',tip:'にんにくは弱火で香りを出す'},
+  {t:'豆板醤・甜麵醬を加える',d:'豆板醤と甜麵醬を加えて炒め、酒・醤油・創味シャンタン・ラー油を加える。',tip:'豆板醤は炒めることで辛みと香りが引き立つ'},
+  {t:'煮る',d:'水200ccと豆腐を加えて2〜3分煮る。',tip:'豆腐を優しく扱いながら煮る'},
+  {t:'とろみをつけて完成',d:'水溶き片栗粉（片栗粉大さじ1＋水大さじ2）を加えてとろみをつけ、長ネギを加える。山椒を振って完成。',tip:'仕上げの山椒が本格的な味の決め手'},
+]},
+
+{id:7,name:'チキン南蛮',emoji:'🐔',role:'main',grad:'linear-gradient(135deg,#F4A261,#E9C46A)',time:25,serve:2,source:'リュウジのバズレシピ',
+desc:'手作りタルタルソースと甘酢ダレの絶妙なバランス。外で食べなくなる本格チキン南蛮。',
+ing:[
+  {n:'鶏モモ肉',a:'300g',c:'肉類'},
+  {n:'小麦粉',a:'大さじ2',c:'粉類'},
+  {n:'卵',a:'2個',c:'卵・乳製品'},
+  {n:'玉ねぎ（タルタル用）',a:'1/4個',c:'野菜'},
+  {n:'ゆで卵（タルタル用）',a:'1個',c:'卵・乳製品'},
+  {n:'ピクルス',a:'15g',c:'その他'},
+  {n:'マヨネーズ',a:'大さじ3',c:'調味料'},
+  {n:'ケチャップ',a:'小さじ1強',c:'調味料'},
+  {n:'醤油（甘酢用）',a:'大さじ1と1/2',c:'調味料'},
+  {n:'酢（甘酢用）',a:'大さじ1と1/2',c:'調味料'},
+  {n:'砂糖（甘酢用）',a:'大さじ1と1/2',c:'調味料'},
+  {n:'味の素',a:'4振り',c:'調味料'},
+],
+steps:[
+  {t:'タルタルソースを作る',d:'玉ねぎ1/8個、ピクルス、ゆで卵を細かく刻み、マヨ大さじ3、ケチャップ小さじ1強、塩小さじ1/4、黒胡椒と混ぜて冷蔵庫で冷やす。',tip:'先に作って冷やすと味が馴染む'},
+  {t:'甘酢ダレを作る',d:'玉ねぎ1/8個（みじん切り）、醤油・酢・砂糖各大さじ1と1/2、ケチャップ小さじ1、味の素4振りを合わせる。',tip:'甘酸っぱさのバランスが決め手'},
+  {t:'鶏肉に衣をつける',d:'鶏モモ肉に塩胡椒をし、小麦粉をまぶしてから溶き卵にくぐらせる。',tip:'小麦粉→卵の順が正解'},
+  {t:'揚げ焼きにする',d:'油を熱したフライパンで鶏肉を揚げ焼きにし、両面こんがり焼く。',tip:'多めの油で揚げ焼きするとサクッと仕上がる'},
+  {t:'甘酢に漬けて完成',d:'揚げた鶏肉を甘酢ダレに漬けて味を絡ませ、タルタルソースをたっぷりかけて完成。',tip:'熱いうちに甘酢に漬けると味が染みやすい'},
+]},
+
+{id:8,name:'テリヤキチキン',emoji:'🐓',role:'main',grad:'linear-gradient(135deg,#F3722C,#F8961E)',time:20,serve:2,source:'リュウジのバズレシピ',
+desc:'片栗粉を使って皮をパリッと仕上げる、家庭で作れる最高のテリヤキチキン。',
+ing:[
+  {n:'鶏モモ肉',a:'300g',c:'肉類'},
+  {n:'片栗粉',a:'小さじ2',c:'粉類'},
+  {n:'醤油',a:'大さじ1と1/2',c:'調味料'},
+  {n:'酒',a:'大さじ1と1/2',c:'調味料'},
+  {n:'みりん',a:'大さじ1と1/2',c:'調味料'},
+  {n:'砂糖',a:'小さじ1と1/2',c:'調味料'},
+  {n:'味の素',a:'3振り',c:'調味料'},
+  {n:'サラダ油',a:'小さじ1',c:'調味料'},
+],
+steps:[
+  {t:'鶏肉の下処理',d:'鶏モモ肉に塩胡椒をし、皮側に片栗粉小さじ2をまぶす。',tip:'片栗粉が皮をパリッとさせるポイント'},
+  {t:'皮から焼く',d:'油小さじ1を熱したフライパンに皮を下にして置き、重しをして弱めの中火で7〜8分焼く。',tip:'重しをすることで皮全体がパリッと仕上がる'},
+  {t:'返して焼く',d:'皮がパリッとしたら返し、蓋をして3〜4分蒸し焼きにする。',tip:'蒸し焼きで中までしっかり火を通す'},
+  {t:'タレを絡める',d:'醤油・酒・みりん・砂糖・味の素を合わせてフライパンに加え、強火で絡めながら煮詰める。',tip:'タレが泡立ってとろっとするまで素早く絡める'},
+  {t:'切り分けて完成',d:'食べやすい大きさに切り、お皿に盛って完成。',tip:'盛り付けに粉山椒や七味を添えても◎'},
+]},
+
+{id:9,name:'豚キムチ',emoji:'🌶️',role:'main',grad:'linear-gradient(135deg,#E63946,#FF9A9E)',time:15,serve:2,source:'リュウジのバズレシピ',
+desc:'薄力粉でとろみをつける裏技で、タレがしっかり絡む本格豚キムチ。',
+ing:[
+  {n:'豚こま肉',a:'160g',c:'肉類'},
+  {n:'キムチ',a:'160g',c:'野菜'},
+  {n:'玉ねぎ',a:'1/4個',c:'野菜'},
+  {n:'にんにく',a:'1/2片',c:'野菜'},
+  {n:'薄力粉',a:'小さじ4',c:'粉類'},
+  {n:'砂糖',a:'小さじ1',c:'調味料'},
+  {n:'醤油',a:'小さじ1',c:'調味料'},
+  {n:'酒',a:'大さじ1',c:'調味料'},
+  {n:'ごま油',a:'大さじ1',c:'調味料'},
+],
+steps:[
+  {t:'肉の下処理',d:'豚こま肉に薄力粉小さじ4をまぶして全体に絡ませる。',tip:'薄力粉がタレを絡みやすくする'},
+  {t:'玉ねぎを炒める',d:'ごま油でみじん切りにんにくと薄切り玉ねぎを炒める。',tip:'玉ねぎは半透明になるまで'},
+  {t:'肉を炒める',d:'豚肉を加えて色が変わるまで炒める。',tip:'強火でサッと炒めるのがポイント'},
+  {t:'キムチを加える',d:'キムチを加えて炒め合わせる。',tip:'キムチは汁ごと入れると旨みアップ'},
+  {t:'味付けして完成',d:'砂糖・醤油・酒を加えてさっと炒め合わせれば完成。',tip:'仕上げに追いごま油でコクを足しても◎'},
+]},
+
+{id:10,name:'黄金炒飯',emoji:'🍚',role:'main',grad:'linear-gradient(135deg,#F9C74F,#F4A261)',time:15,serve:1,source:'リュウジのバズレシピ',
+desc:'豚バラと生姜の組み合わせで作る、パラパラ黄金炒飯の決定版。',
+ing:[
+  {n:'ご飯（サトウのご飯等）',a:'1パック',c:'主食'},
+  {n:'豚バラ肉',a:'50g',c:'肉類'},
+  {n:'卵',a:'2個',c:'卵・乳製品'},
+  {n:'長ネギ',a:'5cm',c:'野菜'},
+  {n:'生姜',a:'3g',c:'野菜'},
+  {n:'塩',a:'小さじ1/2',c:'調味料'},
+  {n:'味の素',a:'8振り',c:'調味料'},
+  {n:'日本酒',a:'大さじ1',c:'調味料'},
+  {n:'黒胡椒',a:'適量',c:'調味料'},
+  {n:'紅しょうが',a:'適量',c:'野菜'},
+],
+steps:[
+  {t:'ご飯を準備する',d:'パックご飯はレンジで温めてほぐしておく。',tip:'温かいご飯がパラパラ炒飯の基本'},
+  {t:'卵をご飯に混ぜる',d:'温かいご飯に溶き卵を加えてよく混ぜ、卵をご飯の一粒一粒に絡ませる。',tip:'この技でパラパラ仕上がりが決まる'},
+  {t:'豚バラを炒める',d:'強火のフライパンで豚バラ肉と生姜を炒め、脂が出たら酒を加える。',tip:'フライパンを十分に熱することが大切'},
+  {t:'ご飯を炒める',d:'卵を絡めたご飯を加えて強火で炒める。塩と味の素を加えてさらに炒める。',tip:'素早く炒めてパラパラに'},
+  {t:'仕上げ',d:'長ネギを加えてさっと炒め、黒胡椒をたっぷり振る。紅しょうがを添えて完成。',tip:'最後に長ネギを加えることで食感と香りが生きる'},
+]},
+
+{id:11,name:'回鍋肉',emoji:'🥬',role:'main',grad:'linear-gradient(135deg,#2D6A4F,#52B788)',time:20,serve:2,source:'リュウジのバズレシピ',
+desc:'片栗粉を使って豚肩ロースをとろっと仕上げる、ごはんが進む本格回鍋肉。',
+ing:[
+  {n:'豚肩ロース肉',a:'250g',c:'肉類'},
+  {n:'キャベツ',a:'200g',c:'野菜'},
+  {n:'ピーマン',a:'3個',c:'野菜'},
+  {n:'長ネギ',a:'1/2本',c:'野菜'},
+  {n:'にんにく',a:'1片',c:'野菜'},
+  {n:'片栗粉',a:'小さじ4',c:'粉類'},
+  {n:'豆板醤',a:'大さじ1',c:'調味料'},
+  {n:'甜麺醤',a:'大さじ2',c:'調味料'},
+  {n:'酒',a:'大さじ2',c:'調味料'},
+  {n:'醤油',a:'小さじ2',c:'調味料'},
+  {n:'味の素',a:'3振り',c:'調味料'},
+],
+steps:[
+  {t:'肉の下処理',d:'豚肩ロースを一口大に切り、塩胡椒と片栗粉をまぶして全体に絡ませる。',tip:'片栗粉が旨みを閉じ込める'},
+  {t:'野菜を炒める',d:'油大さじ1でキャベツ・ピーマンを強火で炒め、塩2つまみを振り取り出す。',tip:'野菜は短時間で炒めてシャキシャキに'},
+  {t:'肉を炒める',d:'油大さじ1でにんにく（みじん切り）を香り出し、肉を炒める。',tip:'にんにくを先に炒めることで香りが立つ'},
+  {t:'調味料を合わせる',d:'豆板醤、甜麺醤、酒、醤油、味の素を加えて炒め絡める。',tip:'甜麺醤の甘みと豆板醤の辛みのバランスが決め手'},
+  {t:'野菜を戻して完成',d:'炒めた野菜を戻し入れて全体を素早く炒め合わせれば完成。',tip:'野菜を戻してからは手早く仕上げる'},
+]},
+
+{id:12,name:'肉野菜炒め',emoji:'🥦',role:'main',grad:'linear-gradient(135deg,#43AA8B,#90BE6D)',time:15,serve:2,source:'リュウジのバズレシピ',
+desc:'特別な調味料なしで中華飯店の味が作れる、野菜の炒め方を究めた肉野菜炒め。',
+ing:[
+  {n:'豚バラ肉',a:'150g',c:'肉類'},
+  {n:'キャベツ',a:'120g',c:'野菜'},
+  {n:'人参',a:'80g',c:'野菜'},
+  {n:'ピーマン',a:'50g',c:'野菜'},
+  {n:'もやし',a:'100g',c:'野菜'},
+  {n:'にんにく',a:'1片',c:'野菜'},
+  {n:'生姜',a:'5g',c:'野菜'},
+  {n:'塩',a:'小さじ1/3',c:'調味料'},
+  {n:'醤油',a:'小さじ1',c:'調味料'},
+  {n:'味の素',a:'5振り',c:'調味料'},
+],
+steps:[
+  {t:'豚バラを炒める',d:'フライパンに油大さじ1を熱し、塩胡椒した豚バラ150gを炒めて取り出す。',tip:'肉は先に炒めて旨みを出す'},
+  {t:'根菜を炒める',d:'同じフライパンで人参千切りとピーマン千切りを1分半ほど炒める。',tip:'硬い野菜は先に炒める'},
+  {t:'キャベツを加える',d:'キャベツ・にんにく・生姜・塩小さじ1/3・味の素5振りを加え、しんなりするまで1分半炒める。',tip:'キャベツは少し大きめに切ると食感が残る'},
+  {t:'もやしを加える',d:'もやし100gを加えてさっと40秒ほど炒める。',tip:'もやしは最後に加え食感を残す'},
+  {t:'肉を戻して仕上げ',d:'豚バラを戻し入れ、醤油小さじ1で香りをつけて完成。',tip:'最後の醤油は香りづけなのでさっと炒める'},
+]},
+
+{id:13,name:'油淋鶏',emoji:'🍗',role:'main',grad:'linear-gradient(135deg,#F4A261,#FFD166)',time:25,serve:2,source:'リュウジのバズレシピ',
+desc:'ザクザクの衣と香り高いネギタレが絶品。何十回も試作した究極の油淋鶏。',
+ing:[
+  {n:'鶏モモ肉',a:'300g',c:'肉類'},
+  {n:'醤油（下味）',a:'小さじ1',c:'調味料'},
+  {n:'塩（下味）',a:'小さじ1/3',c:'調味料'},
+  {n:'酒（下味）',a:'大さじ1と1/2',c:'調味料'},
+  {n:'おろし生姜',a:'5g',c:'野菜'},
+  {n:'片栗粉',a:'適量',c:'粉類'},
+  {n:'長ネギ（タレ用）',a:'50g',c:'野菜'},
+  {n:'生姜（タレ用）',a:'10g',c:'野菜'},
+  {n:'醤油（タレ用）',a:'大さじ2',c:'調味料'},
+  {n:'砂糖',a:'小さじ4',c:'調味料'},
+  {n:'酢',a:'大さじ1',c:'調味料'},
+  {n:'ごま油',a:'小さじ1',c:'調味料'},
+  {n:'味の素',a:'4振り',c:'調味料'},
+  {n:'鷹の爪',a:'1本',c:'調味料'},
+],
+steps:[
+  {t:'鶏肉を漬ける',d:'鶏モモ肉に醤油・塩・酒・おろし生姜を揉み込み15分ほど漬ける。',tip:'漬け時間で下味の深さが変わる'},
+  {t:'ネギタレを作る',d:'長ネギと生姜をみじん切りにし、醤油・砂糖・酢・ごま油・味の素・鷹の爪を混ぜ合わせる。',tip:'タレは先に作って馴染ませる'},
+  {t:'衣をつける',d:'漬け込んだ鶏肉に片栗粉をたっぷりまぶす。',tip:'片栗粉は多めにまぶすとザクザクになる'},
+  {t:'揚げる',d:'170℃の油で鶏肉を揚げる。色がついたら一度取り出し、180℃で30秒二度揚げする。',tip:'二度揚げでザクザク食感に'},
+  {t:'タレをかけて完成',d:'食べやすく切った鶏肉にたっぷりのネギタレをかけて完成。',tip:'タレは多めにかけると美味しい'},
+]},
+
+{id:14,name:'やみつき鶏',emoji:'🐔',role:'main',grad:'linear-gradient(135deg,#EF233C,#D90429)',time:20,serve:2,source:'リュウジのバズレシピ',
+desc:'バターとケチャップの甘辛ダレが絡む中毒性抜群の鶏肉料理。おかず選手権で優秀賞を受賞。',
+ing:[
+  {n:'鶏モモ肉',a:'320g',c:'肉類'},
+  {n:'片栗粉',a:'大さじ1と1/2',c:'粉類'},
+  {n:'バター',a:'15g',c:'卵・乳製品'},
+  {n:'砂糖',a:'大さじ1',c:'調味料'},
+  {n:'ケチャップ',a:'大さじ1',c:'調味料'},
+  {n:'醤油',a:'大さじ1',c:'調味料'},
+  {n:'酒',a:'大さじ1',c:'調味料'},
+  {n:'にんにく',a:'1片',c:'野菜'},
+  {n:'味の素',a:'3振り',c:'調味料'},
+  {n:'タバスコ',a:'4振り',c:'調味料'},
+],
+steps:[
+  {t:'鶏肉の下処理',d:'鶏モモ肉に塩胡椒し、片栗粉大さじ1と1/2をまぶす。',tip:'片栗粉でカリッと仕上がる'},
+  {t:'タレを作る',d:'ケチャップ・醤油・酒・砂糖各大さじ1、おろしにんにく1片、味の素3振り、タバスコ4振りを混ぜておく。',tip:'タバスコが絶妙な隠し味に'},
+  {t:'バターで焼く',d:'フライパンにバター15gを溶かし、鶏肉を入れて両面こんがり焼く。',tip:'バターで焼くとコクが段違い'},
+  {t:'タレを絡める',d:'作ったタレを加えて全体に絡め、煮詰める。',tip:'タレがとろっとするまで煮詰める'},
+  {t:'仕上げ',d:'お皿に盛り、黒胡椒をたっぷり振れば完成。マヨネーズを添えても美味しい。',tip:'黒胡椒は多めに振るのがリュウジ流'},
+]},
+
+{id:15,name:'チキントマト煮',emoji:'🍅',role:'main',grad:'linear-gradient(135deg,#E63946,#A8352B)',time:25,serve:3,source:'リュウジのバズレシピ',
+desc:'茄子と鶏肉をトマト缶で煮込んだ、一生これでいいと言われる絶品イタリアン風煮込み。',
+ing:[
+  {n:'鶏モモ肉',a:'350g',c:'肉類'},
+  {n:'茄子',a:'3本',c:'野菜'},
+  {n:'玉ねぎ',a:'1/2個',c:'野菜'},
+  {n:'にんにく',a:'3片',c:'野菜'},
+  {n:'トマト缶',a:'1缶',c:'缶詰'},
+  {n:'コンソメ',a:'大さじ1',c:'調味料'},
+  {n:'砂糖',a:'小さじ2',c:'調味料'},
+  {n:'日本酒',a:'50cc',c:'調味料'},
+  {n:'オレガノ',a:'小さじ1弱',c:'調味料'},
+  {n:'オリーブオイル',a:'大さじ1と1/2',c:'調味料'},
+],
+steps:[
+  {t:'鶏肉と茄子を焼く',d:'鶏モモ肉に塩黒胡椒をし、オリーブオイルでこんがり焼いて取り出す。茄子は乱切りにして同じフライパンで炒める。',tip:'しっかり焼き色をつけることで風味が増す'},
+  {t:'にんにくと玉ねぎを炒める',d:'フライパンに薄切りにんにくを入れて弱火で香りを出し、玉ねぎを加えて透明になるまで炒める。',tip:'にんにくは弱火でじっくり'},
+  {t:'煮込む',d:'鶏肉・茄子を戻し、トマト缶・コンソメ・砂糖・酒・オレガノを加えて蓋をして15〜20分煮込む。',tip:'蓋をして弱火でじっくり煮込む'},
+  {t:'仕上げ',d:'塩2振りと黒胡椒で味を調え、オリーブオイルを回しかけて完成。',tip:'仕上げのオリーブオイルでコクと光沢が出る'},
+  {t:'盛り付け',d:'お皿に盛り、乾燥パセリを振って完成。タバスコを添えても◎',tip:'翌日はさらに旨みが増して美味しい'},
+]},
+
+{id:16,name:'酢豚',emoji:'🐷',role:'main',grad:'linear-gradient(135deg,#F4A261,#E76F51)',time:25,serve:3,source:'リュウジのバズレシピ',
+desc:'創味シャンタンを隠し味に使った、中華飯店を超える家庭の酢豚。',
+ing:[
+  {n:'豚ロース肉',a:'300g',c:'肉類'},
+  {n:'人参',a:'100g',c:'野菜'},
+  {n:'玉ねぎ',a:'120g',c:'野菜'},
+  {n:'ピーマン',a:'4個',c:'野菜'},
+  {n:'にんにく',a:'1片',c:'野菜'},
+  {n:'卵',a:'1個',c:'卵・乳製品'},
+  {n:'片栗粉',a:'大さじ5',c:'粉類'},
+  {n:'ケチャップ',a:'大さじ5',c:'調味料'},
+  {n:'醤油',a:'小さじ1と1/2',c:'調味料'},
+  {n:'酢',a:'小さじ2',c:'調味料'},
+  {n:'創味シャンタン',a:'小さじ1',c:'調味料'},
+  {n:'砂糖',a:'大さじ1',c:'調味料'},
+  {n:'水',a:'大さじ3',c:'調味料'},
+],
+steps:[
+  {t:'豚肉の下処理',d:'豚ロースを一口大に切り、塩胡椒・卵1個・片栗粉大さじ5を揉み込む。',tip:'卵を加えることで柔らかジューシーに'},
+  {t:'揚げる',d:'油大さじ3を熱したフライパンで豚肉を揚げ焼きにし、こんがりしたら取り出す。',tip:'揚げ焼きは少ない油でもOK'},
+  {t:'野菜を炒める',d:'同じフライパンで人参・玉ねぎ・ピーマン・にんにくを炒める。',tip:'野菜は大きめに切ると食感が残る'},
+  {t:'ソースを作る',d:'ケチャップ・醤油・酢・創味シャンタン・砂糖・水と水溶き片栗粉をよく混ぜてフライパンに加える。',tip:'創味シャンタンが本格的な味の決め手'},
+  {t:'仕上げ',d:'肉を戻し入れ、全体を絡めて完成。',tip:'ソースがとろりと絡んだら食べごろ'},
+]},
+
+{id:17,name:'チンジャオロース',emoji:'🫑',role:'main',grad:'linear-gradient(135deg,#2D6A4F,#40916C)',time:20,serve:2,source:'リュウジのバズレシピ',
+desc:'オイスターソースがけを決め手に、中華飯店の味を再現したチンジャオロース。',
+ing:[
+  {n:'豚こま肉',a:'250g',c:'肉類'},
+  {n:'ピーマン',a:'120g',c:'野菜'},
+  {n:'タケノコ（水煮）',a:'120g',c:'野菜'},
+  {n:'卵',a:'1個',c:'卵・乳製品'},
+  {n:'にんにく',a:'1片',c:'野菜'},
+  {n:'生姜',a:'10g',c:'野菜'},
+  {n:'片栗粉',a:'小さじ5',c:'粉類'},
+  {n:'オイスターソース',a:'大さじ1と1/2',c:'調味料'},
+  {n:'醤油',a:'大さじ1弱',c:'調味料'},
+  {n:'砂糖',a:'小さじ2',c:'調味料'},
+  {n:'酒',a:'小さじ2',c:'調味料'},
+  {n:'味の素',a:'6振り',c:'調味料'},
+],
+steps:[
+  {t:'肉の下処理',d:'豚こま肉に塩胡椒・酒小さじ2・卵1個・片栗粉小さじ5を揉み込む。',tip:'卵と片栗粉でとろっとした食感に'},
+  {t:'野菜を炒める',d:'油大さじ1と1/2でピーマン細切りとタケノコ細切りを強火で炒め取り出す。',tip:'野菜は強火でシャキシャキに'},
+  {t:'肉を炒める',d:'油大さじ1と1/2でにんにく・生姜（ともにみじん切り）を炒め、豚こま肉を加えて炒める。',tip:'にんにくと生姜を先に炒めて香りを出す'},
+  {t:'調味料を加える',d:'オイスターソース・醤油・砂糖・味の素を加えて絡める。',tip:'オイスターソースがコクの決め手'},
+  {t:'野菜を戻して完成',d:'野菜を戻し入れてさっと炒め合わせれば完成。お好みで糸唐辛子を添えても◎',tip:'野菜を戻してからは素早く仕上げる'},
+]},
+
+{id:18,name:'麻婆茄子',emoji:'🍆',role:'main',grad:'linear-gradient(135deg,#7B2D8B,#9B5DE5)',time:20,serve:3,source:'リュウジのバズレシピ',
+desc:'茄子がとろけるように仕上がる、中華屋さんを超えた絶品麻婆茄子。',
+ing:[
+  {n:'茄子',a:'3本（300g）',c:'野菜'},
+  {n:'豚挽き肉',a:'140g',c:'肉類'},
+  {n:'にんにく',a:'2片',c:'野菜'},
+  {n:'長ネギ',a:'1/2本',c:'野菜'},
+  {n:'豆板醤',a:'大さじ1',c:'調味料'},
+  {n:'甜麵醬',a:'大さじ1',c:'調味料'},
+  {n:'創味シャンタン',a:'小さじ1弱',c:'調味料'},
+  {n:'酒',a:'大さじ1',c:'調味料'},
+  {n:'醤油',a:'大さじ1/2',c:'調味料'},
+  {n:'水',a:'200cc',c:'調味料'},
+  {n:'ごま油',a:'小さじ1',c:'調味料'},
+  {n:'ラー油',a:'小さじ1',c:'調味料'},
+  {n:'片栗粉',a:'大さじ1',c:'粉類'},
+  {n:'酢',a:'小さじ1/2',c:'調味料'},
+],
+steps:[
+  {t:'茄子を揚げる',d:'茄子を乱切りにし、フライパン底1cmほどの油で素揚げする。油がなじんだら塩をひとつまみ振る。',tip:'茄子に油を含ませることでとろとろに'},
+  {t:'挽き肉と調味料を炒める',d:'余分な油を除き、豚挽き肉・みじん切りにんにく・豆板醤・甜麵醬を炒める。',tip:'豆板醤は炒めることで辛みが引き立つ'},
+  {t:'煮る',d:'水・創味シャンタン・酒・醤油を加え、揚げた茄子を戻して2〜3分煮る。',tip:'茄子が崩れないよう優しく'},
+  {t:'仕上げ',d:'水溶き片栗粉でとろみをつけ、ごま油・ラー油・酢を加えて長ネギを散らす。',tip:'酢を少量加えることで味が締まる'},
+  {t:'盛り付け',d:'お皿に盛り、追いラー油と小ネギを散らして完成。お好みで花椒を振っても◎',tip:'仕上げのラー油で見た目も美しく'},
+]},
+
+{id:19,name:'そぼろ丼',emoji:'🍱',role:'main',grad:'linear-gradient(135deg,#F9C74F,#F8961E)',time:20,serve:1,source:'リュウジのバズレシピ',
+desc:'作り置きもできる肉そぼろと甘いたまごそぼろの二色丼。お弁当にも最高。',
+ing:[
+  {n:'豚挽き肉',a:'80g',c:'肉類'},
+  {n:'生姜',a:'5g',c:'野菜'},
+  {n:'卵',a:'2個',c:'卵・乳製品'},
+  {n:'ご飯',a:'200g',c:'主食'},
+  {n:'醤油（肉用）',a:'小さじ1',c:'調味料'},
+  {n:'みりん（肉用）',a:'大さじ1',c:'調味料'},
+  {n:'酒（肉用）',a:'大さじ1',c:'調味料'},
+  {n:'白だし（肉用）',a:'小さじ2',c:'調味料'},
+  {n:'白だし（卵用）',a:'小さじ1',c:'調味料'},
+  {n:'砂糖（卵用）',a:'小さじ2',c:'調味料'},
+  {n:'酒（卵用）',a:'小さじ2',c:'調味料'},
+  {n:'ごま油',a:'小さじ2',c:'調味料'},
+],
+steps:[
+  {t:'肉そぼろを作る',d:'油小さじ1と千切り生姜を熱し、豚挽き肉を炒める。醤油・みりん・酒・白だしを加えてそぼろ状に炒める。',tip:'菜箸4〜5本で細かくほぐすと◎'},
+  {t:'卵そぼろを作る',d:'卵2個に白だし・砂糖・酒・塩・ごま油を混ぜ、弱火のフライパンで菜箸で混ぜながら炒り卵にする。',tip:'弱火でゆっくり炒ることでふわふわに'},
+  {t:'盛り付けて完成',d:'ご飯に肉そぼろと卵そぼろを並べて盛り、小ネギを散らして完成。お好みでラー油を添えても◎',tip:'二色の境い目を綺麗に盛ると見栄えが◎'},
+]},
+
+{id:20,name:'ねぎ塩豚カルビ丼',emoji:'🥩',role:'main',grad:'linear-gradient(135deg,#43AA8B,#F9C74F)',time:20,serve:1,source:'リュウジのバズレシピ',
+desc:'中毒性抜群のねぎ塩ダレと豚バラのコンビ。ご飯なら3合いける危険な丼。',
+ing:[
+  {n:'豚バラ肉',a:'120g',c:'肉類'},
+  {n:'長ネギ',a:'60g',c:'野菜'},
+  {n:'にんにく',a:'1片',c:'野菜'},
+  {n:'片栗粉',a:'大さじ1',c:'粉類'},
+  {n:'酒',a:'大さじ3',c:'調味料'},
+  {n:'塩',a:'小さじ1/3',c:'調味料'},
+  {n:'砂糖',a:'小さじ1/2',c:'調味料'},
+  {n:'味の素',a:'3振り',c:'調味料'},
+  {n:'黒胡椒',a:'たっぷり',c:'調味料'},
+  {n:'レモン汁',a:'小さじ2/3',c:'調味料'},
+  {n:'ごま油',a:'小さじ1と1/2',c:'調味料'},
+  {n:'ご飯',a:'200g',c:'主食'},
+],
+steps:[
+  {t:'肉の下処理',d:'豚バラに塩胡椒をし、片栗粉大さじ1をまぶす。',tip:'片栗粉がタレをよく絡ませる'},
+  {t:'にんにくを炒める',d:'ごま油でにんにく1片（みじん切り）を弱火で炒め香りを出す。',tip:'弱火でじっくり炒め焦がさない'},
+  {t:'豚バラを焼く',d:'にんにくを端に寄せ、豚バラと長ネギ（斜め切り60g）を並べてこんがり焼く。',tip:'焼き色をつけることで旨みが増す'},
+  {t:'タレで煮る',d:'酒大さじ3・塩小さじ1/3・砂糖小さじ1/2・味の素3振り・大量の黒胡椒を加えて煮詰める。',tip:'黒胡椒は思っている3倍入れるのがリュウジ流'},
+  {t:'レモンを加えて完成',d:'レモン汁小さじ2/3を加えてさっと混ぜ、ご飯に盛り、黒胡椒と紅しょうがを乗せて完成。',tip:'レモンが全体の味を引き締める'},
+]},
+
+// ===== SIDES =====
+{id:21,name:'だし巻き卵',emoji:'🥚',role:'side',grad:'linear-gradient(135deg,#F9C74F,#F8961E)',time:10,serve:2,source:'リュウジのバズレシピ',
+desc:'茶碗蒸しのようなとろっとした食感。水を限界まで入れることで生まれるだし巻き卵。',
+ing:[
+  {n:'卵（Lサイズ）',a:'2個',c:'卵・乳製品'},
+  {n:'水',a:'50cc',c:'調味料'},
+  {n:'白だし',a:'大さじ1',c:'調味料'},
+  {n:'塩',a:'ひとつまみ',c:'調味料'},
+  {n:'砂糖',a:'ひとつまみ',c:'調味料'},
+  {n:'油',a:'小さじ1と1/2',c:'調味料'},
+  {n:'大根おろし',a:'お好みで',c:'野菜'},
+],
+steps:[
+  {t:'卵液を作る',d:'卵2個を溶いて、水50cc・白だし大さじ1・塩・砂糖ひとつまみずつを加えてよく混ぜる。',tip:'水を多めに入れるのがとろぷるの秘訣'},
+  {t:'油を塗る',d:'玉子焼き器を熱して油小さじ1と1/2を薄く塗る。',tip:'しっかり熱してから油を引く'},
+  {t:'1回目を流す',d:'卵液の1/3量を流し入れ、半熟になったら手前から巻いて奥へ移す。',tip:'半熟のうちに巻くのがポイント'},
+  {t:'繰り返す',d:'油を補い、残りの卵液を2回に分けて同じように焼いて巻く。',tip:'毎回油を補い焦げ付きを防ぐ'},
+  {t:'形を整えて完成',d:'巻きすで形を整えて2分ほど置き、切り分けて大根おろしと共に盛り付けて完成。',tip:'すぐ切らず少し置くと形が安定する'},
+]},
+
+{id:22,name:'きんぴらごぼう',emoji:'🥕',role:'side',grad:'linear-gradient(135deg,#8B7355,#CD853F)',time:15,serve:4,source:'リュウジのバズレシピ',
+desc:'白だし使いで旨みが格段に増す、絶対に誰かに教えたくなるきんぴらごぼう。',
+ing:[
+  {n:'ごぼう',a:'150g',c:'野菜'},
+  {n:'にんじん',a:'150g',c:'野菜'},
+  {n:'油',a:'大さじ1',c:'調味料'},
+  {n:'醤油',a:'大さじ1',c:'調味料'},
+  {n:'白だし',a:'大さじ1',c:'調味料'},
+  {n:'酒',a:'大さじ1と1/2',c:'調味料'},
+  {n:'みりん',a:'大さじ1と1/2',c:'調味料'},
+  {n:'砂糖',a:'小さじ1と1/2',c:'調味料'},
+  {n:'鷹の爪',a:'1本',c:'調味料'},
+  {n:'いりごま',a:'大さじ1と1/2',c:'乾物'},
+],
+steps:[
+  {t:'野菜を切る',d:'ごぼうと人参をせん切りにする。ごぼうは切ったら水にさらしてアクを抜く。',tip:'ごぼうは酢水に入れると白さをキープ'},
+  {t:'炒める',d:'フライパンに油大さじ1と塩ひとつまみを熱し、水気を切ったごぼうと人参を炒める。',tip:'最初から塩を入れることで野菜の水分が出やすくなる'},
+  {t:'調味料を加える',d:'醤油・白だし・酒・みりん・砂糖・鷹の爪を加えて汁気がなくなるまで炒める。',tip:'白だしを使うことで旨みが深まる'},
+  {t:'ごまを加えて完成',d:'いりごまを手で揉みながら加えてさっと混ぜれば完成。',tip:'ごまは揉んで香りを出すのがポイント'},
+]},
+
+{id:23,name:'浅漬け',emoji:'🥒',role:'side',grad:'linear-gradient(135deg,#52B788,#74C69D)',time:15,serve:3,source:'リュウジのバズレシピ',
+desc:'元料理人のじいちゃんが教えてくれた、鰹粉を使う昔ながらの絶品浅漬け。',
+ing:[
+  {n:'きゅうり',a:'3本（330g）',c:'野菜'},
+  {n:'生姜',a:'10g',c:'野菜'},
+  {n:'塩',a:'小さじ1',c:'調味料'},
+  {n:'鰹粉（鰹節を電子レンジで乾燥させて揉んだもの）',a:'3g',c:'乾物'},
+  {n:'味の素',a:'4振り',c:'調味料'},
+  {n:'醤油',a:'少々',c:'調味料'},
+],
+steps:[
+  {t:'きゅうりを切る',d:'きゅうりを輪切りや乱切りにし、生姜は千切りにする。',tip:'きゅうりは厚めに切ると食感が残る'},
+  {t:'塩もみする',d:'きゅうりと生姜を袋に入れ、塩小さじ1を加えてよく揉み、10分ほど置く。',tip:'塩もみ後に水分が出てくるので必ず絞る'},
+  {t:'水気を切る',d:'袋のまま絞って水気をしっかり除く。',tip:'水気をよく切ることで味がぼやけない'},
+  {t:'味付けをする',d:'鰹粉と味の素を加えてよく揉み、15分以上置く。',tip:'鰹粉が旨みをプラスする'},
+  {t:'仕上げ',d:'食べる直前に醤油をたらして完成。',tip:'醤油は食べる直前が鉄則'},
+]},
+
+{id:24,name:'もやし炒め',emoji:'🌱',role:'side',grad:'linear-gradient(135deg,#90BE6D,#43AA8B)',time:10,serve:2,source:'リュウジのバズレシピ',
+desc:'電子レンジとラードを使った裏技で、18円のもやしが1000円レベルの味になる炒め物。',
+ing:[
+  {n:'もやし',a:'200g',c:'野菜'},
+  {n:'豚バラ肉',a:'80g',c:'肉類'},
+  {n:'にんにく',a:'2片',c:'野菜'},
+  {n:'長ねぎ',a:'20g',c:'野菜'},
+  {n:'ラード（またはサラダ油）',a:'大さじ1と小さじ1',c:'調味料'},
+  {n:'片栗粉',a:'小さじ1/2',c:'粉類'},
+  {n:'塩',a:'小さじ1/3',c:'調味料'},
+  {n:'醤油',a:'小さじ1/2',c:'調味料'},
+  {n:'味の素',a:'6振り',c:'調味料'},
+],
+steps:[
+  {t:'もやしをレンジで加熱',d:'もやし200gをボウルに入れてラード（またはサラダ油）大さじ1をかけ、ラップして600W1分加熱する。',tip:'先に油を絡めることで炒めた時の食感が変わる'},
+  {t:'もやしに下味をつける',d:'片栗粉小さじ1/2をもみ込み、塩小さじ1/3・醤油小さじ1/2・黒胡椒・味の素6振りを混ぜておく。',tip:'片栗粉でタレが絡みやすくなる'},
+  {t:'豚バラを炒める',d:'塩胡椒した豚バラ80gを油で炒め、薄切りにんにくと長ねぎも加えて炒める。',tip:'にんにくの香りをしっかり出す'},
+  {t:'もやしを炒めて完成',d:'下処理したもやしを加えてさっと炒めれば完成。',tip:'もやしは炒めすぎず、シャキシャキ感を残す'},
+]},
+
+{id:25,name:'アボカドのツナ和え',emoji:'🥑',role:'side',grad:'linear-gradient(135deg,#52B788,#2D6A4F)',time:5,serve:2,source:'リュウジのバズレシピ',
+desc:'ツナとにんにくごま油の組み合わせが絶妙。一度食べたら止まらないアボカドのツナ和え。',
+ing:[
+  {n:'アボカド',a:'1個',c:'野菜'},
+  {n:'ツナ缶',a:'1/2缶',c:'缶詰'},
+  {n:'にんにく',a:'1/3片',c:'野菜'},
+  {n:'ごま油',a:'小さじ2',c:'調味料'},
+  {n:'塩',a:'小さじ1/4',c:'調味料'},
+  {n:'味の素',a:'4振り',c:'調味料'},
+  {n:'黒胡椒',a:'適量',c:'調味料'},
+  {n:'刻み海苔',a:'適量',c:'乾物'},
+],
+steps:[
+  {t:'アボカドを切る',d:'アボカドを半分に切り、種を取り出して皮をむき、一口大に切る。',tip:'食べやすい大きさに切ると混ぜやすい'},
+  {t:'全てを混ぜる',d:'アボカドにツナ（油を切ったもの）・おろしにんにく・ごま油・塩・味の素・黒胡椒を加えて軽く混ぜる。',tip:'アボカドをある程度崩しながら混ぜるのがコツ'},
+  {t:'盛り付けて完成',d:'器に盛り、刻み海苔をたっぷりかけて完成。小ねぎを散らしても◎',tip:'海苔はたっぷり乗せると香りと旨みが増す'},
+]},
+
+{id:26,name:'なすみそ',emoji:'🍆',role:'side',grad:'linear-gradient(135deg,#7B2D8B,#C77DFF)',time:15,serve:2,source:'リュウジのバズレシピ',
+desc:'ご飯3合、ビール2リットルいける。茄子がジュワトロに仕上がる絶品なすみそ。',
+ing:[
+  {n:'茄子',a:'3本（250g）',c:'野菜'},
+  {n:'にんにく',a:'半片',c:'野菜'},
+  {n:'味噌',a:'大さじ1と2/3',c:'調味料'},
+  {n:'みりん',a:'小さじ2',c:'調味料'},
+  {n:'砂糖',a:'小さじ2',c:'調味料'},
+  {n:'酒',a:'小さじ2',c:'調味料'},
+  {n:'味の素',a:'5振り',c:'調味料'},
+  {n:'ごま油',a:'大さじ1と1/2',c:'調味料'},
+  {n:'輪切り唐辛子',a:'適量',c:'調味料'},
+  {n:'いりごま',a:'適量',c:'乾物'},
+],
+steps:[
+  {t:'茄子を切る',d:'茄子を乱切りにし、塩胡椒をしておく。',tip:'切ったらすぐ焼き始めるとアクが少ない'},
+  {t:'茄子を焼く',d:'ごま油大さじ1と1/2でにんにく（みじん切り）と唐辛子を炒め、茄子を加えて両面しっかり焼く。',tip:'じっくり焼いて茄子に火を通す'},
+  {t:'タレを加える',d:'味噌・みりん・砂糖・酒・味の素を合わせたタレを加えて全体に絡める。',tip:'みりんと砂糖の甘さが茄子と相性抜群'},
+  {t:'仕上げ',d:'いりごまを振って完成。',tip:'ごまの香りがアクセントになる'},
+]},
+
+{id:27,name:'たまごスープ',emoji:'🍳',role:'side',grad:'linear-gradient(135deg,#F9C74F,#F8961E)',time:10,serve:4,source:'リュウジのバズレシピ',
+desc:'高級中華レベルのふわふわ卵スープ。創味シャンタンとオイスターソースの絶妙な組み合わせ。',
+ing:[
+  {n:'卵',a:'2個',c:'卵・乳製品'},
+  {n:'長ねぎ',a:'60g',c:'野菜'},
+  {n:'水',a:'500cc',c:'調味料'},
+  {n:'創味シャンタン',a:'小さじ1と1/2',c:'調味料'},
+  {n:'オイスターソース',a:'小さじ2',c:'調味料'},
+  {n:'酒',a:'大さじ1と1/2',c:'調味料'},
+  {n:'片栗粉',a:'小さじ2',c:'粉類'},
+  {n:'黒胡椒',a:'適量',c:'調味料'},
+],
+steps:[
+  {t:'スープを作る',d:'鍋に水500cc・創味シャンタン・オイスターソース・酒を入れて沸かす。',tip:'沸騰前から調味料を入れると均一に溶ける'},
+  {t:'とろみをつける',d:'水溶き片栗粉（片栗粉小さじ2＋水大さじ2）を加えてとろみをつける。',tip:'少しずつ加えてとろみを調整する'},
+  {t:'卵を流し入れる',d:'よく溶いた卵をゆっくり細く流し入れ、箸でさっとかき混ぜてふわふわに仕上げる。',tip:'一方向にゆっくりかき混ぜるのがコツ'},
+  {t:'仕上げ',d:'長ねぎを加えて黒胡椒を振れば完成。',tip:'長ねぎは最後に加えて香りを活かす'},
+]},
+
+{id:28,name:'わかめスープ',emoji:'🍵',role:'side',grad:'linear-gradient(135deg,#2D6A4F,#52B788)',time:10,serve:3,source:'リュウジのバズレシピ',
+desc:'一杯20円で作れる焼肉屋さんを超えたわかめスープ。ごま油が決め手。',
+ing:[
+  {n:'カットわかめ',a:'5g',c:'乾物'},
+  {n:'にんにく',a:'4g',c:'野菜'},
+  {n:'生姜',a:'4g',c:'野菜'},
+  {n:'長ねぎ',a:'30g',c:'野菜'},
+  {n:'ごま油',a:'大さじ1',c:'調味料'},
+  {n:'創味シャンタン',a:'小さじ1',c:'調味料'},
+  {n:'白だし',a:'小さじ2',c:'調味料'},
+  {n:'醤油',a:'小さじ1',c:'調味料'},
+  {n:'塩',a:'1つまみ',c:'調味料'},
+  {n:'味の素',a:'3振り',c:'調味料'},
+  {n:'白ごま',a:'適量',c:'乾物'},
+],
+steps:[
+  {t:'わかめを戻す',d:'カットわかめ5gを水で戻し、戻し汁と水を合わせて500ccにしておく。',tip:'戻し汁も使うことで旨みを逃さない'},
+  {t:'わかめを炒める',d:'ごま油大さじ1を熱した鍋でわかめの水気をしっかり炒める。',tip:'炒めることで磯の香りが立ち上がる'},
+  {t:'スープを加える',d:'戻し汁・創味シャンタン・白だし・醤油・塩・味の素・おろしにんにく・おろし生姜を加えて沸かす。',tip:'ひと煮立ちで十分'},
+  {t:'仕上げ',d:'長ねぎと白ごまを加えて完成。',tip:'ラー油やお酢を加えると味変が楽しめる'},
+]},
+
+{id:29,name:'豚汁',emoji:'🍜',role:'side',grad:'linear-gradient(135deg,#8B7355,#A07850)',time:30,serve:4,source:'リュウジのバズレシピ',
+desc:'にんにくと白だしを使った、ただの豚汁じゃない本当に旨い豚汁。',
+ing:[
+  {n:'豚バラ肉',a:'280g',c:'肉類'},
+  {n:'ごぼう',a:'150g',c:'野菜'},
+  {n:'大根',a:'200g',c:'野菜'},
+  {n:'こんにゃく',a:'250g',c:'野菜'},
+  {n:'にんじん',a:'100g',c:'野菜'},
+  {n:'生姜',a:'10g',c:'野菜'},
+  {n:'にんにく',a:'2片',c:'野菜'},
+  {n:'長ネギ',a:'1本',c:'野菜'},
+  {n:'水',a:'1リットル',c:'調味料'},
+  {n:'白だし',a:'大さじ4',c:'調味料'},
+  {n:'味噌',a:'大さじ4',c:'調味料'},
+  {n:'みりん',a:'大さじ2',c:'調味料'},
+  {n:'酒',a:'大さじ2',c:'調味料'},
+  {n:'ごま油',a:'大さじ1',c:'調味料'},
+],
+steps:[
+  {t:'野菜を切る',d:'ごぼうはささがきに、大根・にんじんは半月切り、こんにゃくはちぎる。生姜・にんにくはみじん切りに。',tip:'こんにゃくはちぎると味が染みやすい'},
+  {t:'豚バラを炒める',d:'塩胡椒した豚バラをごま油で炒め、生姜・にんにくも加えて炒める。',tip:'脂がしっかり出るまで炒める'},
+  {t:'野菜を加える',d:'ごぼう・大根・こんにゃく・にんじんを加えて炒め合わせる。',tip:'根菜をしっかり炒めることで風味が増す'},
+  {t:'煮る',d:'水1L・白だし・みりん・酒を加えて蓋をして15分煮る。',tip:'白だしを入れることで旨みが格段にアップ'},
+  {t:'味噌を溶いて完成',d:'味噌を溶き入れ、長ネギを加えて完成。',tip:'味噌は沸騰させないのが鉄則'},
+]},
+
+{id:30,name:'ミネストローネ',emoji:'🍲',role:'side',grad:'linear-gradient(135deg,#E63946,#F4A261)',time:25,serve:4,source:'リュウジのバズレシピ',
+desc:'野菜が余らなくなる栄養満点スープ。一生役に立つレシピ。',
+ing:[
+  {n:'キャベツ',a:'200g',c:'野菜'},
+  {n:'ニンジン',a:'100g',c:'野菜'},
+  {n:'じゃがいも',a:'150g',c:'野菜'},
+  {n:'玉ねぎ',a:'150g',c:'野菜'},
+  {n:'ベーコン',a:'100g',c:'肉類'},
+  {n:'にんにく',a:'3片',c:'野菜'},
+  {n:'ホールトマト缶',a:'400g',c:'缶詰'},
+  {n:'コンソメ',a:'大さじ1と1/2',c:'調味料'},
+  {n:'オリーブオイル',a:'大さじ2',c:'調味料'},
+  {n:'日本酒',a:'150cc',c:'調味料'},
+  {n:'水',a:'500cc',c:'調味料'},
+  {n:'オレガノ',a:'小さじ1/3',c:'調味料'},
+],
+steps:[
+  {t:'野菜を切る',d:'キャベツはざく切り、にんじんとじゃがいもは1〜2cm角、玉ねぎは薄切り、ベーコンは短冊切りにする。',tip:'野菜は揃った大きさに切ると均一に火が通る'},
+  {t:'炒める',d:'オリーブオイルでにんにく（みじん切り）とベーコンを炒め、玉ねぎ・にんじん・塩小さじ1/3も加えて炒める。',tip:'ベーコンの脂で野菜を炒めるとコクが出る'},
+  {t:'煮込む',d:'じゃがいも・キャベツ・トマト缶・水・酒・コンソメ・オレガノを加えて蓋をして20分ほど煮込む。',tip:'弱火でじっくり煮ると野菜の甘みが出る'},
+  {t:'仕上げ',d:'塩胡椒で味を調え、オリーブオイルを回しかけ、乾燥パセリを振って完成。粉チーズをかけても美味しい。',tip:'仕上げのオリーブオイルで風味がアップ'},
+]},
+
+{id:31,name:'ピーマンの肉詰め',emoji:'🫑',role:'side',grad:'linear-gradient(135deg,#2D6A4F,#90BE6D)',time:20,serve:2,source:'リュウジのバズレシピ',
+desc:'繋ぎを最小限にした肉肉しい本格ピーマンの肉詰め。家庭料理なのに店で出せる味。',
+ing:[
+  {n:'ピーマン',a:'4個',c:'野菜'},
+  {n:'合挽き肉',a:'220g',c:'肉類'},
+  {n:'玉ねぎ',a:'1/4個',c:'野菜'},
+  {n:'にんにく',a:'1/2片',c:'野菜'},
+  {n:'塩',a:'小さじ1/3',c:'調味料'},
+  {n:'片栗粉',a:'小さじ1',c:'粉類'},
+  {n:'醤油（ソース）',a:'大さじ1',c:'調味料'},
+  {n:'みりん（ソース）',a:'大さじ1',c:'調味料'},
+  {n:'酒',a:'大さじ2',c:'調味料'},
+  {n:'味の素',a:'3振り',c:'調味料'},
+],
+steps:[
+  {t:'タネを作る',d:'合挽き肉220gに玉ねぎ（みじん切り）・にんにく（みじん切り）・塩・黒胡椒・片栗粉を加えてしっかり練り混ぜる。',tip:'よく練り混ぜることで食感が良くなる'},
+  {t:'ピーマンに詰める',d:'ピーマンを半分に切って種を取り、内側に薄く片栗粉をまぶし、タネをしっかり詰める。',tip:'片栗粉をまぶすことでタネが剥がれにくくなる'},
+  {t:'焼く',d:'油小さじ2を熱したフライパンに肉側を下にして並べ、蓋をして蒸し焼きにする。',tip:'蒸し焼きで中まで均一に火が通る'},
+  {t:'返して焼く',d:'肉側に焼き色がついたら返し、酒大さじ2を加えてさらに蒸し焼きにする。',tip:'酒蒸しにすることでふっくら仕上がる'},
+  {t:'ソースで仕上げ',d:'醤油・みりん・味の素を加えて全体に絡め、とろっとしたら完成。',tip:'ソースが煮詰まってとろっとするまで絡める'},
+]},
+
+{id:32,name:'筑前煮',emoji:'🥕',role:'side',grad:'linear-gradient(135deg,#8B7355,#F4A261)',time:40,serve:4,source:'リュウジのバズレシピ',
+desc:'水を一滴も使わずに煮る、野菜の旨みが凝縮された本格筑前煮。',
+ing:[
+  {n:'鶏モモ肉',a:'350g',c:'肉類'},
+  {n:'しいたけ',a:'100g',c:'野菜'},
+  {n:'れんこん',a:'200g',c:'野菜'},
+  {n:'にんじん',a:'200g',c:'野菜'},
+  {n:'こんにゃく',a:'250g',c:'野菜'},
+  {n:'絹さや',a:'適量',c:'野菜'},
+  {n:'薄力粉',a:'大さじ1',c:'粉類'},
+  {n:'醤油',a:'大さじ3',c:'調味料'},
+  {n:'白だし',a:'大さじ1と1/2',c:'調味料'},
+  {n:'みりん',a:'大さじ6',c:'調味料'},
+  {n:'酒',a:'100cc',c:'調味料'},
+  {n:'砂糖',a:'大さじ1',c:'調味料'},
+  {n:'ごま油',a:'大さじ1',c:'調味料'},
+],
+steps:[
+  {t:'野菜の下処理',d:'れんこんを皮をむいて切り、にんじんを乱切り、こんにゃくをちぎって水洗いする。しいたけは石づきを取る。',tip:'こんにゃくはちぎると味が染みやすい'},
+  {t:'鶏肉を焼く',d:'塩をした鶏モモ肉に薄力粉をまぶし、サラダ油とごま油でこんがり焼く。',tip:'鶏肉に焼き色をつけることで香ばしさが増す'},
+  {t:'野菜を炒める',d:'同じフライパンでしいたけ・れんこん・にんじん・こんにゃくを炒める。',tip:'野菜を炒めることで水分が出やすくなる'},
+  {t:'無水で煮込む',d:'醤油・白だし・みりん・酒・砂糖を加えて蓋をし、強めの弱火で30分煮込む。',tip:'水を使わないことで野菜の旨みが凝縮される'},
+  {t:'絹さやを添えて完成',d:'塩分1%のお湯で茹でた絹さやを添えて完成。七味唐辛子やわさびで味変も楽しめる。',tip:'絹さやは鮮やかさのために最後に添える'},
+]},
+
+// ===== 追加レシピ（キッコーマン・ミツカン・味の素・Cookpad・クラシル風） =====
+{id:33,name:'サバの味噌煮',emoji:'🐟',role:'main',grad:'linear-gradient(135deg,#2C5F8A,#4A90D9)',time:25,serve:2,source:'キッコーマン風',
+desc:'ふっくら柔らかいサバと甘辛の味噌ダレが絶妙。生姜でさっぱり仕上げた定番の一品。',
+ing:[
+  {n:'サバ（切り身）',a:'2切れ',c:'魚介類'},
+  {n:'生姜',a:'1片',c:'野菜'},
+  {n:'水',a:'150cc',c:'調味料'},
+  {n:'酒',a:'大さじ3',c:'調味料'},
+  {n:'みりん',a:'大さじ3',c:'調味料'},
+  {n:'砂糖',a:'大さじ2',c:'調味料'},
+  {n:'味噌',a:'大さじ2',c:'調味料'},
+  {n:'醤油',a:'小さじ1',c:'調味料'},
+],
+steps:[
+  {t:'サバの下処理',d:'サバに塩を振って10分置き、熱湯をかけて臭みを取る（霜降り）。表面が白くなったら水洗いして水気を拭く。',tip:'霜降りで生臭さが激減する'},
+  {t:'煮汁を作る',d:'フライパンに水・酒・みりん・砂糖を入れて中火で沸かし、味噌と醤油を溶き入れる。',tip:'砂糖を先に溶かすとまろやかな仕上がりに'},
+  {t:'サバを煮る',d:'煮汁にサバと薄切り生姜を入れ、落とし蓋をして中火で10〜12分煮る。',tip:'落とし蓋で煮汁が全体に回る'},
+  {t:'煮汁を絡めて完成',d:'サバを取り出し、煮汁を強火で軽く煮詰めてサバにかけて完成。',tip:'煮詰めることでとろりと濃厚なタレに'},
+]},
+
+{id:34,name:'ブリの照り焼き',emoji:'🐠',role:'main',grad:'linear-gradient(135deg,#1A6B3A,#52B788)',time:20,serve:2,source:'キッコーマン風',
+desc:'醤油・みりん・酒で作るシンプルな黄金タレが魚に絡む、ご飯が進む定番おかず。',
+ing:[
+  {n:'ブリ（切り身）',a:'2切れ',c:'魚介類'},
+  {n:'醤油',a:'大さじ2',c:'調味料'},
+  {n:'みりん',a:'大さじ2',c:'調味料'},
+  {n:'酒',a:'大さじ2',c:'調味料'},
+  {n:'砂糖',a:'小さじ1',c:'調味料'},
+  {n:'サラダ油',a:'小さじ1',c:'調味料'},
+  {n:'大根おろし',a:'適量',c:'野菜'},
+],
+steps:[
+  {t:'ブリに下味をつける',d:'ブリの両面に塩少々を振って5分置き、水気をキッチンペーパーで拭き取る。',tip:'塩で余分な水分と臭みを除く'},
+  {t:'タレを合わせる',d:'醤油・みりん・酒・砂糖を混ぜてタレを作っておく。',tip:'砂糖を加えることでつやが出る'},
+  {t:'ブリを焼く',d:'油を熱したフライパンでブリの皮目から中火で焼き、焼き色がついたら裏返す。',tip:'皮目から焼くとパリッと仕上がる'},
+  {t:'タレを絡めて完成',d:'余分な油を拭き取り、タレを加えて強火で絡め、とろりとしたら完成。大根おろしを添える。',tip:'強火で素早く絡めるのがコツ'},
+]},
+
+{id:35,name:'鮭のバター醤油焼き',emoji:'🐡',role:'main',grad:'linear-gradient(135deg,#E8834A,#F4A261)',time:15,serve:2,source:'クラシル風',
+desc:'バターと醤油の香ばしい風味が食欲をそそる、フライパンひとつで簡単に作れる鮭料理。',
+ing:[
+  {n:'鮭（切り身）',a:'2切れ',c:'魚介類'},
+  {n:'バター',a:'15g',c:'卵・乳製品'},
+  {n:'醤油',a:'大さじ1',c:'調味料'},
+  {n:'にんにく',a:'1片',c:'野菜'},
+  {n:'レモン汁',a:'小さじ1',c:'調味料'},
+  {n:'塩',a:'少々',c:'調味料'},
+  {n:'黒胡椒',a:'適量',c:'調味料'},
+],
+steps:[
+  {t:'鮭の下処理',d:'鮭の両面に塩・黒胡椒を振り、キッチンペーパーで水気を拭き取る。',tip:'水気をしっかり取ることで皮がパリッと焼ける'},
+  {t:'鮭を焼く',d:'バターを溶かしたフライパンに薄切りにんにくを入れ、香りが出たら鮭を皮目から入れて中火で焼く。',tip:'にんにくバターが香ばしさの決め手'},
+  {t:'裏返して仕上げ',d:'片面に焼き色がついたら裏返し、醤油を加えて絡める。仕上げにレモン汁を振って完成。',tip:'醤油はフライパンの端に入れると香ばしい焦げが生まれる'},
+]},
+
+{id:36,name:'オムライス',emoji:'🍳',role:'main',grad:'linear-gradient(135deg,#F9C74F,#E76F51)',time:25,serve:1,source:'Cookpad風',
+desc:'ふわとろ卵に包まれたチキンライス。家庭の定番料理を丁寧に作る一品。',
+ing:[
+  {n:'ご飯',a:'200g',c:'主食'},
+  {n:'鶏もも肉',a:'100g',c:'肉類'},
+  {n:'玉ねぎ',a:'1/4個',c:'野菜'},
+  {n:'卵',a:'2個',c:'卵・乳製品'},
+  {n:'ケチャップ',a:'大さじ3',c:'調味料'},
+  {n:'バター',a:'10g',c:'卵・乳製品'},
+  {n:'塩',a:'少々',c:'調味料'},
+  {n:'牛乳',a:'大さじ1',c:'卵・乳製品'},
+],
+steps:[
+  {t:'チキンライスを作る',d:'バター5gでみじん切り玉ねぎと一口大の鶏肉を炒め、ご飯を加えてケチャップ大さじ2で炒める。塩で味を調える。',tip:'ご飯を炒める前に水分をしっかり飛ばす'},
+  {t:'チキンライスを整える',d:'楕円形にまとめてフライパンの端に寄せておく。',tip:'後で包みやすい形に'},
+  {t:'卵液を作る',d:'卵2個に牛乳・塩少々を加えてよく溶きほぐす。',tip:'牛乳を加えることでふわとろに仕上がる'},
+  {t:'卵を焼く',d:'別のフライパンにバター5gを溶かし、卵液を流し入れてふわっとかき混ぜ、半熟のうちにチキンライスに被せる。',tip:'卵は半熟を保つのがポイント'},
+  {t:'盛り付けて完成',d:'皿にひっくり返して形を整え、ケチャップをかけて完成。',tip:'布巾で形を整えると美しく仕上がる'},
+]},
+
+{id:37,name:'牛丼',emoji:'🥩',role:'main',grad:'linear-gradient(135deg,#A0522D,#C8773A)',time:20,serve:2,source:'味の素風',
+desc:'牛肉の旨みと玉ねぎの甘みが染みた、お店の味を家庭で再現できる牛丼。',
+ing:[
+  {n:'牛こま切れ肉',a:'200g',c:'肉類'},
+  {n:'玉ねぎ',a:'1個',c:'野菜'},
+  {n:'だし（または水）',a:'200cc',c:'調味料'},
+  {n:'醤油',a:'大さじ3',c:'調味料'},
+  {n:'みりん',a:'大さじ3',c:'調味料'},
+  {n:'酒',a:'大さじ2',c:'調味料'},
+  {n:'砂糖',a:'大さじ1',c:'調味料'},
+  {n:'ご飯',a:'2膳分',c:'主食'},
+  {n:'紅しょうが',a:'適量',c:'野菜'},
+],
+steps:[
+  {t:'玉ねぎを切る',d:'玉ねぎを薄切りにする。',tip:'薄切りにすることで早く火が通り甘みが出やすい'},
+  {t:'煮汁を沸かす',d:'鍋にだし・醤油・みりん・酒・砂糖を入れて中火で沸かし、玉ねぎを加えて3〜4分煮る。',tip:'玉ねぎは柔らかくなるまでしっかり煮る'},
+  {t:'牛肉を加える',d:'牛肉をほぐしながら加え、アクを取りながら4〜5分煮る。',tip:'アクをしっかり取ると澄んだ味に'},
+  {t:'丼にして完成',d:'ご飯の上に具をのせ、お好みで紅しょうがを添えて完成。',tip:'汁ごとご飯にかけると味が染みて美味しい'},
+]},
+
+{id:38,name:'チキンカレー',emoji:'🍛',role:'main',grad:'linear-gradient(135deg,#F4A261,#E9C46A)',time:40,serve:3,source:'クラシル風',
+desc:'市販のルウを使わず、スパイスとコクで仕上げる本格風チキンカレー。',
+ing:[
+  {n:'鶏もも肉',a:'300g',c:'肉類'},
+  {n:'玉ねぎ',a:'2個',c:'野菜'},
+  {n:'にんにく',a:'2片',c:'野菜'},
+  {n:'生姜',a:'1片',c:'野菜'},
+  {n:'ホールトマト缶',a:'1/2缶',c:'缶詰'},
+  {n:'カレー粉',a:'大さじ2',c:'調味料'},
+  {n:'ウスターソース',a:'大さじ1',c:'調味料'},
+  {n:'コンソメ',a:'1個',c:'調味料'},
+  {n:'バター',a:'10g',c:'卵・乳製品'},
+  {n:'塩',a:'小さじ1/2',c:'調味料'},
+  {n:'ご飯',a:'3膳分',c:'主食'},
+],
+steps:[
+  {t:'玉ねぎを炒める',d:'バターで薄切り玉ねぎを中火〜強火で15分、あめ色になるまでしっかり炒める。',tip:'玉ねぎをしっかり炒めることがカレーの深みの決め手'},
+  {t:'スパイスを加える',d:'にんにく・生姜（みじん切り）を加えて炒め、カレー粉を加えてさらに炒める。',tip:'スパイスを油で炒めて香りを引き出す'},
+  {t:'鶏肉を加える',d:'一口大に切った鶏肉を加えて表面の色が変わるまで炒める。',tip:'鶏肉は焼き色をつけると香ばしさが増す'},
+  {t:'煮込む',d:'トマト缶・水300cc・コンソメ・ウスターソース・塩を加えて弱火で20分煮込む。',tip:'弱火でじっくり煮込むと旨みが凝縮'},
+  {t:'仕上げて完成',d:'塩で味を調え、ご飯に添えて完成。',tip:'一晩置くとさらに美味しくなる'},
+]},
+
+{id:39,name:'鶏の黒酢煮',emoji:'🐔',role:'main',grad:'linear-gradient(135deg,#5C4033,#8D6E63)',time:30,serve:2,source:'ミツカン風',
+desc:'黒酢のまろやかな酸味と醤油の旨みが絡み合う、コクのある本格中華風の煮物。',
+ing:[
+  {n:'鶏もも肉',a:'300g',c:'肉類'},
+  {n:'黒酢',a:'大さじ3',c:'調味料'},
+  {n:'醤油',a:'大さじ2',c:'調味料'},
+  {n:'砂糖',a:'大さじ2',c:'調味料'},
+  {n:'酒',a:'大さじ2',c:'調味料'},
+  {n:'片栗粉',a:'適量',c:'粉類'},
+  {n:'にんにく',a:'1片',c:'野菜'},
+  {n:'生姜',a:'1片',c:'野菜'},
+  {n:'長ねぎ',a:'1/2本',c:'野菜'},
+],
+steps:[
+  {t:'鶏肉の下処理',d:'鶏もも肉を一口大に切り、塩胡椒をして片栗粉をまぶす。',tip:'片栗粉でタレが絡みやすくなる'},
+  {t:'鶏肉を焼く',d:'油を熱したフライパンで鶏肉の両面を焼き、きつね色にする。',tip:'しっかり焼き色をつけて香ばしさを出す'},
+  {t:'タレを作る',d:'黒酢・醤油・砂糖・酒を合わせておく。',tip:'甘みと酸味のバランスがポイント'},
+  {t:'煮絡める',d:'にんにく・生姜（薄切り）と長ねぎを加えて炒め、タレを加えて全体に絡めながら煮詰める。',tip:'タレが半量になるまで煮詰める'},
+  {t:'仕上げて完成',d:'白ごまを振り、お好みで小ねぎを散らして完成。',tip:'黒酢は最後に少し足すと香りが際立つ'},
+]},
+
+{id:40,name:'肉豆腐',emoji:'🍲',role:'main',grad:'linear-gradient(135deg,#795548,#A1887F)',time:25,serve:2,source:'キッコーマン風',
+desc:'牛肉と豆腐をすき焼き風の甘辛ダレで煮た、ご飯のお供にもお酒のつまみにも最高の一品。',
+ing:[
+  {n:'牛こま切れ肉',a:'150g',c:'肉類'},
+  {n:'木綿豆腐',a:'1丁（300g）',c:'豆腐・大豆'},
+  {n:'長ねぎ',a:'1本',c:'野菜'},
+  {n:'だし',a:'200cc',c:'調味料'},
+  {n:'醤油',a:'大さじ3',c:'調味料'},
+  {n:'みりん',a:'大さじ3',c:'調味料'},
+  {n:'砂糖',a:'大さじ1と1/2',c:'調味料'},
+  {n:'酒',a:'大さじ2',c:'調味料'},
+],
+steps:[
+  {t:'豆腐の下処理',d:'木綿豆腐をキッチンペーパーで包んで10分おき、水気を切る。食べやすい大きさに切る。',tip:'水切りで豆腐が崩れにくくなる'},
+  {t:'煮汁を作る',d:'鍋にだし・醤油・みりん・砂糖・酒を合わせて中火で沸かす。',tip:'砂糖を加えることでまろやかな甘みが出る'},
+  {t:'豆腐を煮る',d:'豆腐を加えて中火で5分煮る。',tip:'豆腐に味が染みるまでじっくり煮る'},
+  {t:'牛肉と長ねぎを加える',d:'牛肉をほぐして加え、アクを取りながら3〜4分煮る。斜め切りにした長ねぎを加えてさらに煮る。',tip:'長ねぎは最後に加えてシャキシャキ感を残す'},
+  {t:'味を調えて完成',d:'味を確認し、七味唐辛子や一味を添えて完成。',tip:'煮汁を少し残してご飯にかけても美味しい'},
+]},
+
+// ===== 追加副菜 =====
+{id:41,name:'ほうれん草のおひたし',emoji:'🥬',role:'side',grad:'linear-gradient(135deg,#2D6A4F,#52B788)',time:10,serve:2,source:'定番レシピ',
+desc:'だし醤油でシンプルに仕上げた、毎日食べたい副菜の定番。かつお節の旨みが効いている。',
+ing:[
+  {n:'ほうれん草',a:'1束（200g）',c:'野菜'},
+  {n:'だし',a:'大さじ2',c:'調味料'},
+  {n:'醤油',a:'小さじ2',c:'調味料'},
+  {n:'みりん',a:'小さじ1',c:'調味料'},
+  {n:'かつお節',a:'ひとつかみ',c:'乾物'},
+],
+steps:[
+  {t:'ほうれん草を茹でる',d:'たっぷりの湯で塩を加え、ほうれん草を根元から入れて1〜2分茹でる。',tip:'茹で過ぎると色が悪くなるので短時間で'},
+  {t:'冷水にとる',d:'茹でたらすぐに冷水に取り、色止めをしてから水気をしっかり絞る。',tip:'冷水に取ることで鮮やかな色が保たれる'},
+  {t:'切って和える',d:'4〜5cmの長さに切り、だし・醤油・みりんを合わせたタレで和える。',tip:'食べる直前に和えると彩りが美しく保たれる'},
+  {t:'盛り付けて完成',d:'器に盛り、かつお節をたっぷりかけて完成。',tip:'ごまをかけても美味しい'},
+]},
+
+{id:42,name:'かぼちゃの煮物',emoji:'🎃',role:'side',grad:'linear-gradient(135deg,#E17B20,#F4A261)',time:20,serve:4,source:'味の素風',
+desc:'だしと醤油でほっくり甘く仕上げるかぼちゃの煮物。冷めても美味しい日本の定番副菜。',
+ing:[
+  {n:'かぼちゃ',a:'1/4個（300g）',c:'野菜'},
+  {n:'だし',a:'200cc',c:'調味料'},
+  {n:'醤油',a:'大さじ1と1/2',c:'調味料'},
+  {n:'みりん',a:'大さじ1と1/2',c:'調味料'},
+  {n:'砂糖',a:'大さじ1',c:'調味料'},
+],
+steps:[
+  {t:'かぼちゃを切る',d:'かぼちゃを3〜4cm角に切り、面取りをして崩れにくくする。',tip:'面取りすることで煮崩れを防ぐ'},
+  {t:'煮汁を作る',d:'鍋にだし・醤油・みりん・砂糖を入れて沸かす。',tip:'だしの量でかぼちゃの甘みが引き立つ'},
+  {t:'かぼちゃを煮る',d:'かぼちゃを皮目を下にして並べ入れ、落とし蓋をして中火で12〜15分煮る。',tip:'皮を下にすることで形が崩れにくい'},
+  {t:'仕上げて完成',d:'竹串がスッと通ったら火を止め、少し蒸らして味を染み込ませる。',tip:'冷める際に味がより染み込む'},
+]},
+
+{id:43,name:'ひじきの煮物',emoji:'🌿',role:'side',grad:'linear-gradient(135deg,#1a1a2e,#4a4a6e)',time:20,serve:4,source:'定番レシピ',
+desc:'鉄分豊富なひじきを油揚げや人参と一緒に甘辛く炊いた定番の家庭料理。',
+ing:[
+  {n:'乾燥ひじき',a:'15g',c:'乾物'},
+  {n:'油揚げ',a:'1枚',c:'豆腐・大豆'},
+  {n:'にんじん',a:'50g',c:'野菜'},
+  {n:'だし',a:'150cc',c:'調味料'},
+  {n:'醤油',a:'大さじ2',c:'調味料'},
+  {n:'みりん',a:'大さじ2',c:'調味料'},
+  {n:'砂糖',a:'小さじ2',c:'調味料'},
+  {n:'ごま油',a:'小さじ1',c:'調味料'},
+],
+steps:[
+  {t:'ひじきを戻す',d:'乾燥ひじきを水で20分戻し、水気を切る。',tip:'たっぷりの水で戻すと磯臭さが和らぐ'},
+  {t:'材料を炒める',d:'ごま油を熱したフライパンでひじき・細切り油揚げ・細切りにんじんを炒める。',tip:'ごま油で炒めることで香ばしさが増す'},
+  {t:'煮る',d:'だし・醤油・みりん・砂糖を加えて中火で汁気がなくなるまで10〜12分煮る。',tip:'汁気を飛ばしながら炒め煮にすると味が染みる'},
+  {t:'仕上げて完成',d:'汁気がなくなったら完成。白ごまを振っても美味しい。',tip:'冷めても美味しく、作り置きにも最適'},
+]},
+
+{id:44,name:'ポテトサラダ',emoji:'🥗',role:'side',grad:'linear-gradient(135deg,#F4E04D,#F4A261)',time:25,serve:4,source:'Cookpad風',
+desc:'じゃがいもをしっかり潰して作る昔ながらのポテトサラダ。ハムときゅうりの食感がアクセント。',
+ing:[
+  {n:'じゃがいも',a:'3個（400g）',c:'野菜'},
+  {n:'きゅうり',a:'1本',c:'野菜'},
+  {n:'ハム',a:'3枚',c:'肉類'},
+  {n:'玉ねぎ',a:'1/4個',c:'野菜'},
+  {n:'マヨネーズ',a:'大さじ4',c:'調味料'},
+  {n:'酢',a:'小さじ1',c:'調味料'},
+  {n:'塩',a:'少々',c:'調味料'},
+  {n:'黒胡椒',a:'適量',c:'調味料'},
+],
+steps:[
+  {t:'じゃがいもを茹でる',d:'じゃがいもを皮ごと水から茹で、竹串が通るまで15〜20分茹でる。皮をむいて熱いうちに潰す。',tip:'皮ごと茹でると栄養が逃げにくい'},
+  {t:'酢をかける',d:'潰したじゃがいもに酢を振りかけ、粗熱を取る。',tip:'酢で酸味とさっぱり感が加わる'},
+  {t:'野菜の準備',d:'きゅうりは薄切りにして塩を振り、しんなりしたら水気を絞る。玉ねぎは薄切りにして水にさらし、水気を絞る。ハムは短冊切り。',tip:'きゅうりと玉ねぎの水気は必ず絞る'},
+  {t:'和えて完成',d:'粗熱が取れたじゃがいもにきゅうり・玉ねぎ・ハムを加え、マヨネーズ・塩・黒胡椒で和えて完成。',tip:'冷蔵庫で冷やすとより美味しくなる'},
+]},
+
+{id:45,name:'きゅうりとわかめの酢の物',emoji:'🥒',role:'side',grad:'linear-gradient(135deg,#52B788,#95D5B2)',time:10,serve:2,source:'ミツカン風',
+desc:'さっぱりとした酸味が食欲をそそる。ミツカンの三杯酢で手軽に本格的な酢の物が完成。',
+ing:[
+  {n:'きゅうり',a:'2本',c:'野菜'},
+  {n:'カットわかめ（乾燥）',a:'5g',c:'乾物'},
+  {n:'カニカマ',a:'4本',c:'魚介類'},
+  {n:'酢',a:'大さじ2',c:'調味料'},
+  {n:'砂糖',a:'大さじ1',c:'調味料'},
+  {n:'塩',a:'小さじ1/3',c:'調味料'},
+  {n:'醤油',a:'小さじ1',c:'調味料'},
+  {n:'いりごま',a:'適量',c:'乾物'},
+],
+steps:[
+  {t:'きゅうりの下処理',d:'きゅうりを薄切りにして塩をまぶし、5分置いて水気をしっかり絞る。',tip:'塩もみと水絞りで味が馴染みやすくなる'},
+  {t:'わかめを戻す',d:'わかめを水で戻し、食べやすい大きさに切る。',tip:'戻しすぎると風味が抜けるので短時間で'},
+  {t:'合わせ酢を作る',d:'酢・砂糖・塩・醤油を合わせてよく混ぜる。',tip:'砂糖が溶けるまでよく混ぜる'},
+  {t:'和えて完成',d:'きゅうり・わかめ・手でほぐしたカニカマを合わせ酢で和え、いりごまを振って完成。',tip:'食べる直前に和えると水っぽくならない'},
+]},
+
+{id:46,name:'切り干し大根の煮物',emoji:'🌾',role:'side',grad:'linear-gradient(135deg,#A0896A,#C8A87A)',time:20,serve:4,source:'定番レシピ',
+desc:'乾燥大根を戻して炊く、食物繊維たっぷりの日本の伝統的な副菜。作り置きにも最適。',
+ing:[
+  {n:'切り干し大根（乾燥）',a:'30g',c:'乾物'},
+  {n:'油揚げ',a:'1枚',c:'豆腐・大豆'},
+  {n:'にんじん',a:'50g',c:'野菜'},
+  {n:'だし',a:'200cc',c:'調味料'},
+  {n:'醤油',a:'大さじ2',c:'調味料'},
+  {n:'みりん',a:'大さじ2',c:'調味料'},
+  {n:'砂糖',a:'小さじ1',c:'調味料'},
+  {n:'ごま油',a:'小さじ1',c:'調味料'},
+],
+steps:[
+  {t:'切り干し大根を戻す',d:'切り干し大根を水で15分戻し、水気を軽く絞って食べやすい長さに切る。戻し汁は取っておく。',tip:'戻し汁も使うと旨みが増す'},
+  {t:'材料を炒める',d:'ごま油を熱したフライパンで切り干し大根・細切り油揚げ・細切りにんじんを炒める。',tip:'炒めることでコクと香りが増す'},
+  {t:'煮る',d:'だし（戻し汁と合わせて200cc）・醤油・みりん・砂糖を加えて中火で10〜12分、汁気が少なくなるまで煮る。',tip:'汁気を飛ばしながら炒め煮にする'},
+  {t:'仕上げて完成',d:'汁気がほぼなくなったら完成。',tip:'冷めても美味しく、翌日はさらに味が染みる'},
+]},
+];
+
+// ===================== STEP TIMING TABLE (approach B) =====================
+// 各レシピの各ステップ所要時間(分) — 合計はrecipe.timeと一致
+const STEP_MINS = {
+  1:  [2,3,8,4,3],    // 生姜焼き 20
+  2:  [3,25,2,3,2],   // 唐揚げ 35
+  3:  [7,5,8,6,4],    // ハンバーグ 30
+  4:  [2,5,7,2,4],    // 親子丼 20
+  5:  [8,4,3,22,3],   // 無水肉じゃが 40
+  6:  [3,4,3,5,5],    // 麻婆豆腐 20
+  7:  [4,3,3,10,5],   // チキン南蛮 25
+  8:  [2,8,4,4,2],    // テリヤキチキン 20
+  9:  [2,4,3,3,3],    // 豚キムチ 15
+  10: [2,2,4,4,3],    // 黄金炒飯 15
+  11: [3,4,4,4,5],    // 回鍋肉 20
+  12: [3,3,4,2,3],    // 肉野菜炒め 15
+  13: [15,4,2,3,1],   // 油淋鶏 25
+  14: [3,2,10,3,2],   // やみつき鶏 20
+  15: [7,5,10,2,1],   // チキントマト煮 25
+  16: [5,7,5,4,4],    // 酢豚 25
+  17: [4,4,5,3,4],    // チンジャオロース 20
+  18: [5,4,5,4,2],    // 麻婆茄子 20
+  19: [8,8,4],         // そぼろ丼 20
+  20: [3,4,5,5,3],    // ねぎ塩豚カルビ丼 20
+  21: [2,1,3,3,1],    // だし巻き卵 10
+  22: [4,4,5,2],       // きんぴら 15
+  23: [2,3,2,6,2],    // 浅漬け 15
+  24: [2,2,4,2],       // もやし炒め 10
+  25: [2,2,1],         // アボカドのツナ和え 5
+  26: [3,5,5,2],       // なすみそ 15
+  27: [3,3,2,2],       // たまごスープ 10
+  28: [2,2,4,2],       // わかめスープ 10
+  29: [5,5,5,13,2],   // 豚汁 30
+  30: [4,5,13,3],      // ミネストローネ 25
+  31: [5,3,6,4,2],    // ピーマンの肉詰め 20
+  32: [5,7,8,18,2],   // 筑前煮 40
+  33: [5,3,12,5],      // サバの味噌煮 25
+  34: [3,2,8,7],       // ブリの照り焼き 20
+  35: [3,7,5],         // 鮭のバター醤油焼き 15
+  36: [8,2,5,7,3],    // オムライス 25
+  37: [2,6,8,4],       // 牛丼 20
+  38: [15,5,5,12,3],  // チキンカレー 40
+  39: [3,7,2,12,6],   // 鶏の黒酢煮 30
+  40: [3,3,5,8,6],    // 肉豆腐 25
+  41: [3,2,4,1],       // ほうれん草のおひたし 10
+  42: [3,2,12,3],      // かぼちゃの煮物 20
+  43: [3,3,12,2],      // ひじきの煮物 20
+  44: [18,2,4,1],      // ポテトサラダ 25
+  45: [3,2,2,3],       // きゅうりとわかめの酢の物 10
+  46: [3,3,12,2],      // 切り干し大根の煮物 20
+};
+
+// ===================== STATE =====================
+const S = {days:5, dishes:3, plan:[], checked:new Set(), curRecipe:null, curScreen:'home', prevScreen:'home', addTarget:null, addFilter:'all', addSearch:'', guideDay:null};
+const MAINS = DB.filter(r=>r.role==='main');
+const SIDES = DB.filter(r=>r.role==='side');
+
+// ===================== HELPERS =====================
+function adj(key, d) {
+  if(key==='days') S.days = Math.min(14, Math.max(2, S.days+d));
+  if(key==='dishes') S.dishes = Math.min(3, Math.max(1, S.dishes+d));
+  document.getElementById('days-val').textContent = S.days;
+  document.getElementById('dishes-val').textContent = S.dishes;
+}
+
+function shuffle(arr) {
+  const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a;
+}
+
+function pickUnique(pool, count) {
+  const s=shuffle(pool);
+  if(s.length>=count) return s.slice(0,count);
+  // if pool smaller than count, allow repeats
+  const res=[];
+  for(let i=0;i<count;i++) res.push(s[i%s.length]);
+  return res;
+}
+
+function dateStr(offset) {
+  const d=new Date(); d.setDate(d.getDate()+offset);
+  const days=['日','月','火','水','木','金','土'];
+  return `${d.getMonth()+1}/${d.getDate()}(${days[d.getDay()]})`;
+}
+
+// ===================== GENERATE =====================
+function generate() {
+  S.plan=[];
+  const mPool=shuffle(MAINS);
+  const sPool=shuffle(SIDES);
+  let mi=0, si=0;
+  for(let i=0;i<S.days;i++){
+    const main=mPool[mi%mPool.length]; mi++;
+    const sides=[];
+    for(let j=0;j<S.dishes-1;j++){
+      sides.push(sPool[si%sPool.length]); si++;
+    }
+    S.plan.push({date:dateStr(i), main, sides});
+  }
+  S.checked.clear();
+  renderPlan();
+  renderShop();
+  document.getElementById('home-notice').style.display='block';
+  goScreen('plan');
+}
+
+function regenDish(dayIdx, type, sideIdx) {
+  const day=S.plan[dayIdx];
+  if(type==='main'){
+    const used=S.plan.map(d=>d.main.id);
+    const avail=MAINS.filter(r=>r.id!==day.main.id);
+    const pick=avail.length>0?shuffle(avail)[0]:shuffle(MAINS)[0];
+    day.main=pick;
+  } else {
+    const cur=day.sides[sideIdx];
+    const avail=SIDES.filter(r=>r.id!==cur.id);
+    const pick=avail.length>0?shuffle(avail)[0]:shuffle(SIDES)[0];
+    day.sides[sideIdx]=pick;
+  }
+  S.checked.clear();
+  renderPlan();
+  renderShop();
+}
+
+// ===================== RENDER PLAN =====================
+function renderPlan() {
+  const el=document.getElementById('plan-list');
+  if(!S.plan.length){el.innerHTML='<div class="empty-state"><div class="e-icon">📅</div><p>まだ献立がありません<br>ホームから生成してください</p></div>';return;}
+  document.getElementById('plan-sub').textContent=`${S.days}日分 / ${S.dishes}品`;
+  el.innerHTML=S.plan.map((day,di)=>`
+    <div class="day-card">
+      <div class="day-hdr">
+        <span class="day-label">DAY ${di+1}</span>
+        <span class="day-date">${day.date}</span>
+        <button class="guide-btn" onclick="showGuide(${di})">📋 今日の作り方</button>
+      </div>
+      ${day.main ? `
+      <div class="dish-row" onclick="showRecipe(${day.main.id})">
+        <span class="dish-emoji">${day.main.emoji}</span>
+        <div class="dish-info">
+          <div class="dish-role">主菜</div>
+          <div class="dish-name">${day.main.name}</div>
+          <div class="dish-meta">⏱ ${day.main.time}分 · ${day.main.serve}人前</div>
+        </div>
+        <div class="dish-actions">
+          <button class="regen-btn" onclick="event.stopPropagation();regenDish(${di},'main')" title="別のレシピに">🔄</button>
+          <button class="del-btn" onclick="event.stopPropagation();deleteDish(${di},'main')" title="削除">🗑</button>
+        </div>
+      </div>` : `<button class="add-btn" onclick="openAddModal(${di},'main')">＋ 主菜を追加</button>`}
+      ${day.sides.map((s,si)=>`
+      <div class="dish-row" onclick="showRecipe(${s.id})">
+        <span class="dish-emoji">${s.emoji}</span>
+        <div class="dish-info">
+          <div class="dish-role">副菜</div>
+          <div class="dish-name">${s.name}</div>
+          <div class="dish-meta">⏱ ${s.time}分 · ${s.serve}人前</div>
+        </div>
+        <div class="dish-actions">
+          <button class="regen-btn" onclick="event.stopPropagation();regenDish(${di},'side',${si})" title="別のレシピに">🔄</button>
+          <button class="del-btn" onclick="event.stopPropagation();deleteDish(${di},'side',${si})" title="削除">🗑</button>
+        </div>
+      </div>`).join('')}
+      <button class="add-btn" onclick="openAddModal(${di},'side')">＋ おかずを追加</button>
+    </div>`).join('');
+}
+
+// ===================== RENDER RECIPE =====================
+function showRecipe(id) {
+  S.curRecipe=DB.find(r=>r.id===id);
+  if(!S.curRecipe) return;
+  S.prevScreen=S.curScreen;
+  const r=S.curRecipe;
+  document.getElementById('recipe-content').innerHTML=`
+    <div class="recipe-hero" style="background:${r.grad}">
+      <div class="recipe-hero-content">
+        <span class="recipe-emoji">${r.emoji}</span>
+        <div class="recipe-name">${r.name}</div>
+        <div class="recipe-desc">${r.desc}</div>
+        <div class="recipe-tags">
+          <span class="tag">⏱ ${r.time}分</span>
+          <span class="tag">👤 ${r.serve}人前</span>
+          <span class="tag">${r.role==='main'?'主菜':'副菜'}</span>
+        </div>
+      </div>
+    </div>
+    <div class="section-title">📝 材料（${r.serve}人前）</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      ${r.ing.map(i=>`<div class="ing-item"><span class="ing-name">${i.n}</span><span class="ing-amt">${i.a}</span></div>`).join('')}
+    </div>
+    <div class="section-title">👨‍🍳 作り方</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      ${r.steps.map((s,i)=>`
+      <div class="step-item">
+        <div class="step-num">STEP ${i+1}</div>
+        <div class="step-title">${s.t}</div>
+        <div class="step-desc">${s.d}</div>
+        ${s.tip?`<div class="step-tip">💡 ${s.tip}</div>`:''}
+      </div>`).join('')}
+    </div>
+    <div class="source-note">レシピ：${r.source}</div>
+  `;
+  goScreen('recipe');
+}
+
+function goBack() {
+  goScreen(S.prevScreen);
+}
+
+// ===================== RENDER SHOPPING =====================
+function renderShop() {
+  const el=document.getElementById('shop-list');
+  if(!S.plan.length){el.innerHTML='<div class="empty-state"><div class="e-icon">🛒</div><p>まだ献立がありません<br>ホームから生成してください</p></div>';return;}
+  // Collect all ingredients
+  const allRecipes=[...S.plan.map(d=>d.main),...S.plan.flatMap(d=>d.sides)];
+  const map={};
+  allRecipes.forEach(r=>{
+    r.ing.forEach(i=>{
+      const key=i.n;
+      if(!map[key]) map[key]={n:i.n,a:i.a,c:i.c,id:key};
+    });
+  });
+  // Group by category
+  const catOrder=['肉類','魚介類','野菜','卵・乳製品','豆腐・大豆','粉類','缶詰','乾物','調味料','主食','その他'];
+  const groups={};
+  catOrder.forEach(c=>groups[c]=[]);
+  groups['その他']=groups['その他']||[];
+  Object.values(map).forEach(i=>{
+    const c=catOrder.includes(i.c)?i.c:'その他';
+    if(!groups[c]) groups[c]=[];
+    groups[c].push(i);
+  });
+  const total=Object.values(map).length;
+  document.getElementById('shop-sub').textContent=`${total}品目`;
+  el.innerHTML=catOrder.filter(c=>groups[c]&&groups[c].length).map(c=>`
+    <div class="cat-section">
+      <div class="cat-title">${c}</div>
+      ${groups[c].map(i=>`
+      <div class="shop-item ${S.checked.has(i.id)?'checked':''}" onclick="toggleCheck('${i.id}')">
+        <div class="shop-check">${S.checked.has(i.id)?'✓':''}</div>
+        <span class="shop-name">${i.n}</span>
+        <span class="shop-amt">${i.a}</span>
+      </div>`).join('')}
+    </div>`).join('');
+}
+
+function toggleCheck(id) {
+  if(S.checked.has(id)) S.checked.delete(id); else S.checked.add(id);
+  renderShop();
+}
+
+// ===================== DELETE DISH =====================
+function deleteDish(dayIdx, type, sideIdx) {
+  const day = S.plan[dayIdx];
+  if(type==='main') { day.main = null; }
+  else { day.sides.splice(sideIdx, 1); }
+  renderPlan(); renderShop();
+}
+
+// ===================== ADD DISH MODAL =====================
+function openAddModal(dayIdx, preferRole) {
+  S.addTarget = {dayIdx, preferRole};
+  S.addFilter = preferRole || 'all';
+  S.addSearch = '';
+  document.getElementById('add-search-input').value = '';
+  document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+  const tabId = S.addFilter==='all'?'tab-all':S.addFilter==='main'?'tab-main':'tab-side';
+  document.getElementById(tabId).classList.add('active');
+  document.getElementById('add-modal').classList.add('open');
+  renderAddModal();
+}
+
+function closeAddModal(e) {
+  document.getElementById('add-modal').classList.remove('open');
+}
+
+function setAddFilter(f) {
+  S.addFilter = f;
+  document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+f).classList.add('active');
+  renderAddModal();
+}
+
+function setAddSearch(v) {
+  S.addSearch = v;
+  renderAddModal();
+}
+
+function renderAddModal() {
+  const q = S.addSearch.trim().toLowerCase();
+  let list = DB;
+  if(S.addFilter!=='all') list = list.filter(r=>r.role===S.addFilter);
+  if(q) list = list.filter(r=>r.name.toLowerCase().includes(q) || r.desc.toLowerCase().includes(q));
+  const el = document.getElementById('add-modal-list');
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub);font-size:13px">該当するレシピがありません</div>';return;}
+  el.innerHTML = list.map(r=>`
+    <div class="modal-recipe-row" onclick="addDishToDay(${r.id})">
+      <span class="modal-recipe-emoji">${r.emoji}</span>
+      <div class="modal-recipe-info">
+        <div class="modal-recipe-role">${r.role==='main'?'主菜':'副菜'}</div>
+        <div class="modal-recipe-name">${r.name}</div>
+        <div class="modal-recipe-meta">⏱ ${r.time}分 · ${r.serve}人前</div>
+      </div>
+    </div>`).join('');
+}
+
+function addDishToDay(recipeId) {
+  const recipe = DB.find(r=>r.id===recipeId);
+  if(!recipe || !S.addTarget) return;
+  const {dayIdx, preferRole} = S.addTarget;
+  const day = S.plan[dayIdx];
+  if(preferRole==='main' || !day.main) { day.main = recipe; }
+  else { day.sides.push(recipe); }
+  closeAddModal();
+  renderPlan(); renderShop();
+}
+
+// ===================== GUIDE SCREEN =====================
+function showGuide(dayIdx) {
+  S.guideDay = dayIdx;
+  const day = S.plan[dayIdx];
+  const dishes = [];
+  if(day.main) dishes.push(day.main);
+  dishes.push(...day.sides);
+  if(!dishes.length){alert('献立がありません');return;}
+  S.prevScreen = S.curScreen;
+
+  // --- 各ステップに絶対開始時刻を割り当てる ---
+  // 最も調理時間が長い料理を0分スタートにし、
+  // それ以外は「同時に終わる」ように開始時刻をずらす
+  const maxTime = Math.max(...dishes.map(d=>d.time));
+
+  // 各料理ごとに {dish, startAt, steps:[{t,d,tip,min,absStart}]} を構築
+  const dishTimelines = dishes.map(dish=>{
+    const mins = STEP_MINS[dish.id] || dish.steps.map(()=>Math.round(dish.time/dish.steps.length));
+    const dishStart = maxTime - dish.time; // 最長に合わせてずらした開始時刻
+    let cursor = dishStart;
+    const steps = dish.steps.map((s,i)=>({
+      ...s,
+      min: mins[i] || 1,
+      absStart: cursor,
+      absEnd: cursor += (mins[i]||1),
+    }));
+    return {dish, dishStart, steps};
+  });
+
+  // 全ステップを absStart 昇順→料理インデックス昇順でフラット化
+  const allSteps = dishTimelines
+    .flatMap(dt=>dt.steps.map(s=>({...s, dish:dt.dish})))
+    .sort((a,b)=> a.absStart!==b.absStart ? a.absStart-b.absStart : dishes.indexOf(a.dish)-dishes.indexOf(b.dish));
+
+  // 総調理時間
+  const totalMin = maxTime;
+
+  // --- HTML生成 ---
+  const timelineHtml = allSteps.map((s, i)=>{
+    const isLast = i===allSteps.length-1;
+    return `
+    <div class="timeline-step">
+      <div class="timeline-left">
+        <div class="timeline-time">${s.absStart}分</div>
+        ${isLast?'':`<div class="timeline-line"></div>`}
+      </div>
+      <div class="timeline-card">
+        <div class="timeline-dish-tag">
+          <span class="timeline-dish-emoji">${s.dish.emoji}</span>
+          <span class="timeline-dish-name">${s.dish.name}</span>
+          <span class="timeline-duration">${s.min}分</span>
+        </div>
+        <div class="timeline-step-title">${s.t}</div>
+        <div class="timeline-step-desc">${s.d}</div>
+        ${s.tip?`<div class="timeline-tip">💡 ${s.tip}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('guide-content').innerHTML=`
+    <div class="guide-day-info">
+      <div class="guide-day-label">DAY ${dayIdx+1} — ${day.date}（合計 約${totalMin}分）</div>
+      <div class="guide-day-dishes">${dishes.map(d=>d.emoji+' '+d.name).join('・')}</div>
+    </div>
+    <div class="section-title">⏱ 調理タイムライン</div>
+    <div class="timeline-container">${timelineHtml}</div>
+    <div style="height:24px"></div>
+  `;
+  goScreen('guide');
+}
+
+// ===================== NAVIGATION =====================
+function goScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('s-'+name).classList.add('active');
+  const nb=document.getElementById('nav-'+name);
+  if(nb) nb.classList.add('active');
+  S.curScreen=name;
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
