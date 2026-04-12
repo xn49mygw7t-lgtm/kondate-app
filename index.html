@@ -1702,6 +1702,151 @@ function showGuide(dayIdx) {
   goScreen('guide');
 }
 
+// ===================== RECIPE EDITOR =====================
+let editorRole = 'main';
+let editorEmoji = '🍳';
+let editorId = null; // null = new recipe
+
+function openEditor(id) {
+  S.prevScreen = S.curScreen;
+  editorId = id || null;
+  const r = id ? getAllRecipes().find(x=>x.id===id) : null;
+  document.getElementById('editor-title').textContent = r ? 'レシピを編集' : 'レシピを追加';
+  document.getElementById('ed-name').value = r ? r.name : '';
+  document.getElementById('ed-time').value = r ? r.time : '20';
+  editorEmoji = r ? r.emoji : '🍳';
+  document.getElementById('ed-emoji-selected').textContent = editorEmoji;
+  document.getElementById('ed-emoji-input').value = editorEmoji;
+  editorRole = r ? r.role : 'main';
+  document.getElementById('ed-role-main').classList.toggle('selected', editorRole==='main');
+  document.getElementById('ed-role-side').classList.toggle('selected', editorRole==='side');
+  // ingredients
+  const ings = r ? r.ing : [{n:'',a:'',c:'調味料'}];
+  document.getElementById('ed-ing-list').innerHTML = '';
+  ings.forEach(i => addIngRow(i.n, i.a, i.c));
+  // steps
+  const steps = r ? r.steps : [{t:'',d:'',tip:''}];
+  document.getElementById('ed-step-list').innerHTML = '';
+  steps.forEach(s => addStepRow(s.t, s.d, s.tip||''));
+  // delete button
+  document.getElementById('ed-delete-btn').style.display = (r && r.id >= 1000) ? 'block' : 'none';
+  goScreen('editor');
+}
+
+function setEditorRole(role) {
+  editorRole = role;
+  document.getElementById('ed-role-main').classList.toggle('selected', role==='main');
+  document.getElementById('ed-role-side').classList.toggle('selected', role==='side');
+}
+
+function setEditorEmoji(val) {
+  if(!val) return;
+  const chars = [...val];
+  editorEmoji = chars[0] || '🍳';
+  document.getElementById('ed-emoji-selected').textContent = editorEmoji;
+}
+
+function addIngRow(name='', amt='', cat='調味料') {
+  const div = document.createElement('div');
+  div.className = 'ing-editor-row';
+  div.innerHTML = `
+    <input type="text" placeholder="材料名" value="${name}" style="flex:2">
+    <input type="text" placeholder="量" value="${amt}" style="flex:1">
+    <button class="del-row-btn" onclick="this.parentElement.remove()">×</button>`;
+  document.getElementById('ed-ing-list').appendChild(div);
+}
+
+function addStepRow(title='', desc='', tip='') {
+  const list = document.getElementById('ed-step-list');
+  const idx = list.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'step-editor-card';
+  div.innerHTML = `
+    <div class="step-editor-top">
+      <span class="step-num-label">STEP ${idx}</span>
+      <button class="del-row-btn" onclick="this.closest('.step-editor-card').remove();renumberSteps()">×</button>
+    </div>
+    <input type="text" placeholder="タイトル（例: 野菜を切る）" value="${title}">
+    <textarea placeholder="手順の説明">${desc}</textarea>
+    <input type="text" placeholder="💡 ポイント（任意）" value="${tip}">`;
+  list.appendChild(div);
+}
+
+function renumberSteps() {
+  document.querySelectorAll('#ed-step-list .step-num-label').forEach((el,i)=>{
+    el.textContent = `STEP ${i+1}`;
+  });
+}
+
+function getAllRecipes() {
+  const custom = JSON.parse(localStorage.getItem('customRecipes')||'[]');
+  return [...DB, ...custom];
+}
+
+function saveRecipe() {
+  const name = document.getElementById('ed-name').value.trim();
+  if(!name){alert('料理名を入力してください');return;}
+  const time = parseInt(document.getElementById('ed-time').value)||20;
+  // ingredients
+  const ingRows = document.querySelectorAll('#ed-ing-list .ing-editor-row');
+  const ing = [...ingRows].map(row=>{
+    const inputs = row.querySelectorAll('input');
+    return {n:inputs[0].value.trim(), a:inputs[1].value.trim(), c:'調味料'};
+  }).filter(i=>i.n);
+  // steps
+  const stepCards = document.querySelectorAll('#ed-step-list .step-editor-card');
+  const steps = [...stepCards].map(card=>{
+    const inputs = card.querySelectorAll('input');
+    const ta = card.querySelector('textarea');
+    return {t:inputs[0].value.trim(), d:ta.value.trim(), tip:inputs[1].value.trim()};
+  }).filter(s=>s.t||s.d);
+
+  const grads = {main:'linear-gradient(135deg,#FF6B35,#FF8E53)', side:'linear-gradient(135deg,#52B788,#95D5B2)'};
+  const custom = JSON.parse(localStorage.getItem('customRecipes')||'[]');
+
+  if(editorId && editorId >= 1000) {
+    // update existing custom recipe
+    const idx = custom.findIndex(r=>r.id===editorId);
+    if(idx>=0) custom[idx] = {...custom[idx], name, emoji:editorEmoji, role:editorRole, time, serve:2, ing, steps, grad:grads[editorRole]};
+  } else if(!editorId) {
+    // new recipe
+    const newId = custom.length > 0 ? Math.max(...custom.map(r=>r.id))+1 : 1000;
+    custom.push({id:newId, name, emoji:editorEmoji, role:editorRole, time, serve:2, source:'オリジナル', desc:'', grad:grads[editorRole], ing, steps});
+  } else {
+    // editing a built-in recipe: save as override
+    const existIdx = custom.findIndex(r=>r.id===editorId);
+    const base = DB.find(r=>r.id===editorId);
+    const updated = {...base, name, emoji:editorEmoji, role:editorRole, time, ing, steps, grad:grads[editorRole]};
+    if(existIdx>=0) custom[existIdx]=updated; else custom.push(updated);
+  }
+  localStorage.setItem('customRecipes', JSON.stringify(custom));
+  rebuildDB();
+  alert('保存しました！');
+  goBack();
+}
+
+function deleteRecipe() {
+  if(!confirm('このレシピを削除しますか？'))return;
+  const custom = JSON.parse(localStorage.getItem('customRecipes')||'[]');
+  const filtered = custom.filter(r=>r.id!==editorId);
+  localStorage.setItem('customRecipes', JSON.stringify(filtered));
+  rebuildDB();
+  goScreen('home');
+}
+
+function rebuildDB() {
+  const custom = JSON.parse(localStorage.getItem('customRecipes')||'[]');
+  // merge: custom overrides DB entries with same id, then appends new ones
+  const overrides = custom.filter(c=>DB.some(d=>d.id===c.id));
+  const additions = custom.filter(c=>!DB.some(d=>d.id===c.id));
+  const merged = DB.map(d=>{
+    const ov = overrides.find(o=>o.id===d.id);
+    return ov || d;
+  }).concat(additions);
+  MAINS.length=0; SIDES.length=0;
+  merged.forEach(r=>{ if(r.role==='main') MAINS.push(r); else SIDES.push(r); });
+}
+
 // ===================== NAVIGATION =====================
 function goScreen(name) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
