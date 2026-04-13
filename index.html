@@ -1788,21 +1788,25 @@ function generate() {
   S.plan=[];
   const mPool=shuffle(MAINS);
   const sPool=shuffle(SIDES);
-  const nonSoupPool=sPool.filter(r=>!SOUP_IDS.has(r.id));
-  let mi=0, si=0, nsi=0;
+  let mi=0, si=0;
   for(let i=0;i<S.days;i++){
     const main=mPool[mi%mPool.length]; mi++;
     const sides=[];
     let hasSoup=false;
     for(let j=0;j<S.dishes-1;j++){
-      // 既に汁物があれば汁物以外から選ぶ
-      const pool = (hasSoup && nonSoupPool.length) ? nonSoupPool : sPool;
-      const pick = pool === nonSoupPool
-        ? nonSoupPool[nsi%nonSoupPool.length]
-        : sPool[si%sPool.length];
+      // 候補を絞る（汁物重複・肉重複を避ける）
+      let candidates=sPool.filter(r=>{
+        if(hasSoup && SOUP_IDS.has(r.id)) return false;
+        if(MEAT_MAIN_IDS.has(main.id) && MEAT_SIDE_IDS.has(r.id)) return false;
+        if(CHICKEN_MAIN_IDS.has(main.id) && CHICKEN_SIDE_IDS.has(r.id)) return false;
+        return true;
+      });
+      // フォールバック（汁物だけ除外）
+      if(!candidates.length) candidates=sPool.filter(r=>!hasSoup||!SOUP_IDS.has(r.id));
+      if(!candidates.length) candidates=sPool;
+      const pick=candidates[si%candidates.length]; si++;
       if(SOUP_IDS.has(pick.id)) hasSoup=true;
       sides.push(pick);
-      if(pool===nonSoupPool) nsi++; else si++;
     }
     S.plan.push({date:dateStr(i), main, sides});
   }
