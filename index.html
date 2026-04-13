@@ -1631,7 +1631,7 @@ function renderShop() {
       <div class="shop-item ${S.checked.has(i.id)?'checked':''}" onclick="toggleCheck('${i.id}')">
         <div class="shop-check">${S.checked.has(i.id)?'✓':''}</div>
         <span class="shop-name">${i.n}</span>
-        <span class="shop-amt">${i.a}</span>
+        <span class="shop-amt">${formatAmount(i.parts)}</span>
       </div>`).join('')}
     </div>`).join('');
 }
