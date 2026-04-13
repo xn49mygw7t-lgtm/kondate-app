@@ -1428,23 +1428,22 @@ function generate() {
   const mPool=shuffle(MAINS);
   const sPool=shuffle(SIDES);
   const nonSoupPool=sPool.filter(r=>!SOUP_IDS.has(r.id));
-  const soupPool=sPool.filter(r=>SOUP_IDS.has(r.id));
-  let mi=0, si=0, nsi=0, soui=0;
+  let mi=0, si=0, nsi=0;
   for(let i=0;i<S.days;i++){
     const main=mPool[mi%mPool.length]; mi++;
     const sides=[];
-    const sideCount=S.dishes-1;
-    // 汁物を1品含める（副菜が1品以上あり汁物プールが存在する場合）
-    if(sideCount>=1 && soupPool.length){
-      sides.push(soupPool[soui%soupPool.length]); soui++;
+    let hasSoup=false;
+    for(let j=0;j<S.dishes-1;j++){
+      // 既に汁物があれば汁物以外から選ぶ
+      const pool = (hasSoup && nonSoupPool.length) ? nonSoupPool : sPool;
+      const pick = pool === nonSoupPool
+        ? nonSoupPool[nsi%nonSoupPool.length]
+        : sPool[si%sPool.length];
+      if(SOUP_IDS.has(pick.id)) hasSoup=true;
+      sides.push(pick);
+      if(pool===nonSoupPool) nsi++; else si++;
     }
-    // 残りスロットは汁物以外から選ぶ
-    const fillPool = nonSoupPool.length ? nonSoupPool : sPool;
-    while(sides.length<sideCount){
-      sides.push(fillPool[nsi%fillPool.length]); nsi++;
-    }
-    // 並び順をシャッフルして汁物が毎回先頭にならないようにする
-    S.plan.push({date:dateStr(i), main, sides:shuffle(sides)});
+    S.plan.push({date:dateStr(i), main, sides});
   }
   S.checked.clear();
   renderPlan();
