@@ -1836,15 +1836,28 @@ function regenDish(dayIdx, type, sideIdx) {
 }
 
 // ===================== RENDER PLAN =====================
+function dayKcalTotal(day) {
+  const dishes=[day.main,...day.sides].filter(Boolean);
+  return dishes.reduce((sum,d)=>sum+(KCAL[d.id]||250),0);
+}
+function kcalBadge(kcal) {
+  if(kcal<=650) return `<span class="kcal-badge kcal-ok">🟢 約${kcal}kcal</span>`;
+  if(kcal<=850) return `<span class="kcal-badge kcal-mid">🟡 約${kcal}kcal</span>`;
+  return `<span class="kcal-badge kcal-hi">🔴 約${kcal}kcal</span>`;
+}
+
 function renderPlan() {
   const el=document.getElementById('plan-list');
   if(!S.plan.length){el.innerHTML='<div class="empty-state"><div class="e-icon">📅</div><p>まだ献立がありません<br>ホームから生成してください</p></div>';return;}
   document.getElementById('plan-sub').textContent=`${S.days}日分 / ${S.dishes}品`;
-  el.innerHTML=S.plan.map((day,di)=>`
+  el.innerHTML=S.plan.map((day,di)=>{
+    const kcal=dayKcalTotal(day);
+    return `
     <div class="day-card">
       <div class="day-hdr">
         <span class="day-label">DAY ${di+1}</span>
         <span class="day-date">${day.date}</span>
+        ${kcalBadge(kcal)}
         <button class="guide-btn" onclick="showGuide(${di})">📋 今日の作り方</button>
       </div>
       ${day.main ? `
