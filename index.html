@@ -225,9 +225,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 
 <!-- PLAN -->
 <div class="screen" id="s-plan">
-  <div class="hdr">
-    <h1>献立</h1>
-    <div class="sub" id="plan-sub"></div>
+  <div class="hdr" style="display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <h1>献立</h1>
+      <div class="sub" id="plan-sub"></div>
+    </div>
+    <button class="print-btn" onclick="window.print()" title="印刷・PDF保存">🖨️ 保存</button>
   </div>
   <div id="plan-list">
     <div class="empty-state">
