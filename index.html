@@ -1982,15 +1982,21 @@ function formatAmount(parts) {
 }
 
 // ===================== RENDER SHOPPING =====================
+function normalizeIngName(n) {
+  return n.trim()
+    .replace(/[\u30A1-\u30F6]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60))
+    .replace(/\s+/g,'');
+}
+
 function renderShop() {
   const el=document.getElementById('shop-list');
   if(!S.plan.length){el.innerHTML='<div class="empty-state"><div class="e-icon">🛒</div><p>まだ献立がありません<br>ホームから生成してください</p></div>';return;}
-  // Collect all ingredients and aggregate same-name items
+  // Collect all ingredients and aggregate same-name items (normalize for dedup)
   const allRecipes=[...S.plan.map(d=>d.main).filter(Boolean),...S.plan.flatMap(d=>d.sides)];
   const map={};
   allRecipes.forEach(r=>{
     r.ing.forEach(i=>{
-      const key=i.n;
+      const key=normalizeIngName(i.n);
       if(!map[key]) map[key]={n:i.n,parts:[i.a],c:i.c,id:key};
       else map[key].parts.push(i.a);
     });
@@ -2005,6 +2011,8 @@ function renderShop() {
     if(!groups[c]) groups[c]=[];
     groups[c].push(i);
   });
+  // 未購入を上、購入済みを下にソート
+  catOrder.forEach(c=>{ if(groups[c]) groups[c].sort((a,b)=>(S.checked.has(a.id)?1:0)-(S.checked.has(b.id)?1:0)); });
   const total=Object.values(map).length;
   document.getElementById('shop-sub').textContent=`${total}品目`;
   el.innerHTML=catOrder.filter(c=>groups[c]&&groups[c].length).map(c=>`
