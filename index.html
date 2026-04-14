@@ -2130,7 +2130,7 @@ function addDishToDay(recipeId) {
   if(preferRole==='main' || !day.main) { day.main = recipe; }
   else { day.sides.push(recipe); }
   closeAddModal();
-  renderPlan(); renderShop();
+  savePlan(); renderPlan(); renderShop();
 }
 
 // ===================== GUIDE SCREEN =====================
