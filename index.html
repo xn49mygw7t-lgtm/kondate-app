@@ -1822,6 +1822,7 @@ function generate() {
     S.plan.push({date:dateStr(i), main, sides});
   }
   S.checked.clear();
+  savePlan();
   renderPlan();
   renderShop();
   document.getElementById('home-notice').style.display='block';
