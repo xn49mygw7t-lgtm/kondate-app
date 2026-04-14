@@ -1843,8 +1843,36 @@ function regenDish(dayIdx, type, sideIdx) {
     day.sides[sideIdx]=pick;
   }
   S.checked.clear();
+  savePlan();
   renderPlan();
   renderShop();
+}
+
+// ===================== PLAN SAVE/RESTORE =====================
+function savePlan() {
+  if(!S.plan.length) return;
+  const data={
+    plan:S.plan.map(d=>({date:d.date,mainId:d.main?d.main.id:null,sideIds:d.sides.map(s=>s.id)})),
+    days:S.days,dishes:S.dishes,persons:S.persons
+  };
+  localStorage.setItem('savedPlan',JSON.stringify(data));
+}
+
+function restorePlan() {
+  const saved=localStorage.getItem('savedPlan');
+  if(!saved) return;
+  try {
+    const {plan,days,dishes,persons}=JSON.parse(saved);
+    const all=getAllRecipes();
+    S.days=days; S.dishes=dishes; S.persons=persons;
+    S.plan=plan.map(d=>({
+      date:d.date,
+      main:d.mainId!=null?all.find(r=>r.id===d.mainId)||null:null,
+      sides:(d.sideIds||[]).map(id=>all.find(r=>r.id===id)).filter(Boolean)
+    }));
+    document.getElementById('home-notice').style.display='block';
+    renderPlan(); renderShop();
+  } catch(e){}
 }
 
 // ===================== RENDER PLAN =====================
