@@ -104,6 +104,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;bac
 .kcal-mid{background:#fff8e1;color:#f57f17}
 .kcal-hi{background:#ffebee;color:#c62828}
 .day-hdr{flex-wrap:wrap;gap:4px}
+.print-btn{padding:6px 14px;border:1.5px solid var(--primary);border-radius:20px;background:none;color:var(--primary);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.print-btn:active{background:rgba(255,107,53,.1)}
+@media print{.nav,.print-btn,.regen-btn,.del-btn,.add-btn,.guide-btn,.hdr .sub{display:none!important}.screen{display:block!important}.day-card{break-inside:avoid;box-shadow:none;border:1px solid #ddd}.dish-row{cursor:default}body{padding-bottom:0}}
 
 /* Guide screen */
 .guide-day-info{margin:0 16px 16px;padding:14px 16px;background:linear-gradient(135deg,rgba(255,107,53,.12),rgba(255,142,83,.12));border-radius:14px}
