@@ -2072,7 +2072,7 @@ function deleteDish(dayIdx, type, sideIdx) {
   const day = S.plan[dayIdx];
   if(type==='main') { day.main = null; }
   else { day.sides.splice(sideIdx, 1); }
-  renderPlan(); renderShop();
+  savePlan(); renderPlan(); renderShop();
 }
 
 // ===================== ADD DISH MODAL =====================
