@@ -2104,7 +2104,7 @@ function renderShop() {
   // 未購入を上、購入済みを下にソート
   catOrder.forEach(c=>{ if(groups[c]) groups[c].sort((a,b)=>(S.checked.has(a.id)?1:0)-(S.checked.has(b.id)?1:0)); });
   const total=Object.values(map).length;
-  document.getElementById('shop-sub').textContent=`${total}品目`;
+  document.getElementById('shop-sub').textContent=`${total}品目・${S.persons}人分`;
   el.innerHTML=catOrder.filter(c=>groups[c]&&groups[c].length).map(c=>`
     <div class="cat-section">
       <div class="cat-title">${c}</div>
