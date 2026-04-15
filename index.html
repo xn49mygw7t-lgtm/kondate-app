@@ -2054,17 +2054,41 @@ function normalizeIngName(n) {
     .replace(/\s+/g,'');
 }
 
+function gcd(a, b) { return b===0 ? a : gcd(b, a%b); }
+
+// 分量文字列を人数比で倍率スケール（"120g"×2→"240g"、"1/4個"×2→"1/2個"）
+function scaleAmount(str, factor) {
+  if(!str || factor===1) return str;
+  if(SPECIALS.includes(str.trim())) return str;
+  return str.replace(/(\d+)\/(\d+)|(\d+(?:\.\d+)?)/g, (match, n, d, whole) => {
+    const val = (n!==undefined) ? parseInt(n)/parseInt(d) : parseFloat(whole);
+    const scaled = val * factor;
+    if(Number.isInteger(scaled)) return String(Math.round(scaled));
+    // 分数に変換を試みる
+    for(const denom of [2,3,4,6,8,10]) {
+      const numer = scaled * denom;
+      if(Math.abs(numer - Math.round(numer)) < 0.01) {
+        const g = gcd(Math.round(numer), denom);
+        return `${Math.round(numer)/g}/${denom/g}`;
+      }
+    }
+    return (Math.round(scaled*10)/10).toString();
+  });
+}
+
 function renderShop() {
   const el=document.getElementById('shop-list');
   if(!S.plan.length){el.innerHTML='<div class="empty-state"><div class="e-icon">🛒</div><p>まだ献立がありません<br>ホームから生成してください</p></div>';return;}
-  // Collect all ingredients and aggregate same-name items (normalize for dedup)
+  // Collect all ingredients — scale by persons/serve ratio
   const allRecipes=[...S.plan.map(d=>d.main).filter(Boolean),...S.plan.flatMap(d=>d.sides)];
   const map={};
   allRecipes.forEach(r=>{
+    const factor=(S.persons&&r.serve) ? S.persons/r.serve : 1;
     r.ing.forEach(i=>{
       const key=normalizeIngName(i.n);
-      if(!map[key]) map[key]={n:i.n,parts:[i.a],c:i.c,id:key};
-      else map[key].parts.push(i.a);
+      const amt=scaleAmount(i.a, factor);
+      if(!map[key]) map[key]={n:i.n,parts:[amt],c:i.c,id:key};
+      else map[key].parts.push(amt);
     });
   });
   // Group by category
